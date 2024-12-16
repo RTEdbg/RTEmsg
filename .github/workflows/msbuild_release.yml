@@ -1,0 +1,64 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  SOLUTION_FILE_PATH: Code/RTEmsg.sln
+  BUILD_CONFIGURATION: ReleaseNoDLL
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup LLVM
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: "17.0"
+
+      - name: Build
+        run: |
+          call "C:\Program Files\LLVM\bin\clang-cl.exe"
+          msbuild /m /p:Configuration=${{ env.BUILD_CONFIGURATION }} /p:PlatformToolset=ClangCL ${{ env.SOLUTION_FILE_PATH }}
+
+      - name: Create Executable Artifact
+        run: |
+          mkdir -p release
+          Compress-Archive -Path Code/x64/Release/RTEmsg.exe -DestinationPath release/RTEmsg-${{ github.ref_name }}-windows-x64.zip
+
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release App
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: release/RTEmsg-${{ github.ref_name }}-windows-x64.zip
+          asset_name: RTEmsg-${{ github.ref_name }}-windows-x64.zip
+          asset_content_type: application/zip
+          
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RTEmsg-${{ github.ref_name }}-windows-x64.zip
+          path: release/
