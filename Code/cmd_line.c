@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -83,7 +83,7 @@ void check_timestamp_diff_values(void)
 {
     if (g_msg.param.max_negative_tstamp_diff_f == 0.0)
     {
-        return;     // No -ts command line argument
+        return;     // No -ts command-line argument was found.
     }
 
     double frequency =
@@ -368,6 +368,12 @@ static void process_parameter_file(char *file_name)
         {
             process_one_cmd_line_parameter(duplicate_string(prepare_folder_name(file_line, 0)));
         }
+    }
+
+    if (ferror(par_file))
+    {
+        report_error_and_exit(get_message_text(FATAL_READ_FROM_CMD_LINE_PARAM_FILE),
+            EXIT_FATAL_FMT_PARSING_ERRORS);
     }
 
     fclose(par_file);

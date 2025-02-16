@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -87,7 +87,10 @@ static void print_message_type_and_date(uint32_t msg_index)
 
 static void process_streaming_mode_messages(void)
 {
-    g_msg.message_cnt--;    // Do not count internal messages
+    if (g_msg.message_cnt > 0)
+    {
+        g_msg.message_cnt--;        // Do not count internal messages
+    }
 
     // Check if the current message has the correct type and length
     // and reset the statistics if a new snapshot or single-shot logging code is detected
@@ -413,6 +416,7 @@ static char *convert_octal_number(char *message, size_t *chars_processed, unsign
     {
         message++;
         result = (result * 8u) + data - '0';
+            // If the user provides a value that is too large, it could result in an overflow.
         (*chars_processed)++;
         data = *message;
 

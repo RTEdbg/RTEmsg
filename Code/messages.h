@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -97,6 +97,7 @@ enum error_and_other_messages
    FATAL_MISSING_OUTPUT_FOLDER,                 // "Missing output folder name or syntax error."
    FATAL_MISSING_FMT_FOLDER,                    // "Missing format definition folder name or syntax error."
    FATAL_BAD_PARAM_FILE,                        // "The RTEmsg parameter file name must be preceded by an '@' character to pass the parameter file to the program."
+   FATAL_READ_FROM_CMD_LINE_PARAM_FILE,         // "Failed to read from the command line parameter file"
    /* - - - - - - - - - - - - - - - - - - - - - - */
    FATAL_LAST,                                  // "Unknown error (error number out of range)"
 
@@ -133,7 +134,6 @@ enum error_and_other_messages
    ERR_PLACE_HOLDER0v,                          // " "
    ERR_PLACE_HOLDER0w,                          // " "
    ERR_PLACE_HOLDER0z,                          // " "
-   ERR_PLACE_HOLDER0z1,                         // " "
 
 /****** Non fatal errors ******/
 #define FIRST_ERROR ERR_UNFINISHED_BLOCK
@@ -165,7 +165,7 @@ enum error_and_other_messages
    ERR_DECODE_DATA_SIZE_NOT_DIVISIBLE_BY_8,     // "The value size is %u bits. Must be divisible by %u for this message type."
    ERR_DECODE_ADDRESS_NOT_DIVISIBLE_BY_8,       // "Value address = %u. Must be divisible by %u for this type."
    ERR_DECODE_VALUE_NOT_IN_MESSAGE,             // "Value end address (%u) is above last bit address (%u) of this message."
-   ERR_PLACE_HOLDER1,                           // " "
+   ERR_NO_BIN_FILE_INFO,                        // "Unable to retrieve binary file date/time information""
    ERR_AUTO_VALUE_AND_SCALING,                  // "Scaling cannot be used if the value size and type are not defined with the size field [nn:mmF] or [mmF]."
    ERR_COULD_NOT_DELETE_FILE,                   // "Failed to delete file '%s'"
    ERR_UNWANTED_EXTENDED_DATA,                  // "Suspicious message: non-zero extended data found in a message (MSGN/MSGX) that should not contain it (extended value = %u)."
@@ -180,8 +180,8 @@ enum error_and_other_messages
    ERR_TIMESTAMP_FREQUENCY_ZERO,                // "A zero timestamp frequency value was found in the MSG1_TSTAMP_FREQUENCY message. The previous value will be used instead."
    ERR_MSGX_SIZE_EMPTY,                         // "Suspicious MSGX message - missing DATA word (should have at least one)"
    ERR_MSGX_CORRUPTED,                          // "Suspicious MSGX message - unused portion of last DATA word not zero"
+   ERR_BIN_DATA_FILE_FSEEK,                     // "Problem with reading a binary data file - fseek issue %s#u"
 
-   ERR_PLACE_HOLDER2,                           // " "
    ERR_PLACE_HOLDER3,                           // " "
    ERR_PLACE_HOLDER4,                           // " "
    ERR_PLACE_HOLDER5,                           // " "
@@ -284,7 +284,7 @@ enum error_and_other_messages
    ERR_PARSE_OUT_SELECT_UNDEFINED,              // "Undefined OUT_FILE name or syntax error"
    ERR_PARSE_IN_SELECT_UNDEFINED,               // "Undefined IN_FILE name or syntax error"
    ERR_PARSE_IN_OUT_SELECT_NO_MSG,              // "The <IN_FILE or >OUT_FILE directive must follow an MSG definition"
-   ERR_PARSE_IN_FILE_SELECT_ERROR,              // "The file defined by IN_FILE() cannot be opened"
+   ERR_PARSE_IN_FILE_SELECT_ERROR,              // "The file defined by IN_FILE() cannot be opened or read"
    ERR_PARSE_IN_FILE_TOO_LONG,                  // "The file defined by IN_FILE() is too large"
    ERR_PARSE_IN_FILE_SELECT_INVALID_OPTIONS,    // "Each line in the file defined by IN_FILE() must contain at least one character and no more than 255 characters"
    ERR_PARSE_IN_FILE_SELECT_MIN_TWO_LINES,      // "The file defined by IN_FILE() must contain at least two lines"
@@ -292,7 +292,7 @@ enum error_and_other_messages
    ERR_PARSE_BAD_NAME_PREFIX,                   // "Name must begin with prefix: "
    ERR_PARSE_INVALID_NAME,                      // "Name could not be found or is invalid"
    ERR_PARSE_NAME_TOO_LONG,                     // "Name too long"
-   ERR_PARSE_EXPECTING_NUMBER,                  // "Expecting a number"
+   ERR_PARSE_EXPECTING_NUMBER,                  // "Expecting a number (or overflow during number conversion)"
    ERR_PARSE_EMPTY_STRING,                      // "Empty format string not allowed"
    ERR_PARSE_MEMO_INIT_VAL,                     // "MEMO initial value invalid or syntactically incorrect"
    ERR_PARSE_NO_CLOSING_BRACKET,                // "Closing bracket ')' expected"
@@ -343,6 +343,8 @@ enum error_and_other_messages
    ERR_PARSE_STATISTICS_NOT_ALLOWED,            // "Statistics not allowed for this format type"
    ERR_PARSE_EXT_MSG_NO_BITS,                   // "The y-value in the format ID name EXT_MSGx_y is too large or zero (max. 8 for EXT_MSG0, 7 for EXT_MSG1, ... 4 for EXT_MSG4)"
    ERR_PARSE_EXPECTING_UNDERSCORE,              // "Expected underscore in front of the y-value in EXT_MSGx_y format ID name"
+   ERR_PARSE_FILE_WORK_CANNOT_COMPARE,          // "Cannot read from file during file comparison (work and/or destination file)"
+   ERR_PARSE_FILE_CANNOT_WRITE_TO_WORK_FILE,    // "Errors found while writing in the work file"
    /******* Parsing error messages end *******/
 
    /******  Other text messages ******/
@@ -405,6 +407,7 @@ enum error_and_other_messages
    MSG_INDEX,                                   // "index"
    MSG_SIZE_SHOULD_BE,                          // " (the data size should be %u words)"
    MSG_WARN_ERROR_IN_FIRST_SNAPSHOT_MSG,        // "\n  Note: The first message of a snapshot may be partially overwritten when the last message is written, and this may be the cause of the error shown above.\n"
+   MSG_PROBLEMS_WRITING_TO_OUTPUT_FILES,        // "\n\nErrors were detected while writing to the following files during data decoding:"
 
    TOTAL_MESSAGES                               /* Total number of all text messages */
 };

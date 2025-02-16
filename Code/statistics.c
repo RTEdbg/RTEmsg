@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -43,8 +43,8 @@
 static void determine_minimal_value(double *min_values, uint32_t *msg_numbers, double value,
                                     uint32_t message_no, unsigned count)
 {
-    // Check if the new value should be inserted into the table
-    // Do not exit until the table is full (MIN_MAX_VALUES are in the table)
+    /* Check if the new value should be inserted into the table
+     * Do not exit until the table is full (MIN_MAX_VALUES are in the table) */
     if (count >= MIN_MAX_VALUES)
     {
         // Exit if the value is larger than or equal to the largest value in the table
@@ -98,8 +98,8 @@ static void determine_minimal_value(double *min_values, uint32_t *msg_numbers, d
 static void determine_maximal_value(double *max_values, uint32_t *msg_numbers, double value,
                                     uint32_t message_no, unsigned count)
 {
-    // Check if the new value should be inserted into the table
-    // Do not exit until the table is full (MIN_MAX_VALUES are in the table)
+    /* Check if the new value should be inserted into the table
+     * Do not exit until the table is full (MIN_MAX_VALUES are in the table) */
     if (count >= MIN_MAX_VALUES)
     {
         // Exit if the value is smaller than or equal to the smallest value in the table
@@ -319,9 +319,9 @@ static void print_messages_with_top_frequencies(void)
             continue;   // No messages of this type have been received
         }
 
-        //-----------------------------------------------------------------------
-        // Check if the message count has a higher frequency of occurrences than
-        // the current ones in the table and insert it if it does.
+        /*----------------------------------------------------------------------
+         * Check if the message count has a higher frequency of occurrences than
+         * the current ones in the table and insert it if it does. */
         unsigned value = p_fmt->counter_total;
 
         if (msgs_found >= TOP_MESSAGES)
@@ -389,9 +389,9 @@ static void print_messages_with_top_buffer_usage(void)
             continue;
         }
 
-        //-----------------------------------------------------------------------
-        // Check if the message count has a higher buffer usage than the
-        // current ones in the table and insert it if it does.
+        /*---------------------------------------------------------------
+         * Check if the message count has a higher buffer usage than the
+         * current ones in the table and insert it if it does. */
         unsigned value = p_fmt->total_data_received * 4;    // Convert words to bytes
 
         if (msgs_found >= TOP_MESSAGES)
@@ -634,7 +634,6 @@ void reset_statistics(void)
     msg_data_t *p_already_processed = NULL;
 
     g_msg.error_warning_in_msg = g_msg.message_cnt + 1;
-        // The first error in the snapshot may not be complete
         // A warning is displayed after the error(s)
 
     for (unsigned int i = 0; i < g_msg.fmt_ids_defined; i++)

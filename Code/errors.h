@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,7 +17,7 @@
 #include "main.h"
 
 // Exit codes for various error scenarios
-#define EXIT_FATAL_FMT_PARSING_ERRORS            1u      // Errors during format definition processing
+#define EXIT_FATAL_FMT_PARSING_ERRORS            1u      // Errors during command file or format definition processing
 #define EXIT_FATAL_DECODING_ERRORS_DETECTED      2u      // Fatal errors during binary file processing
 #define EXIT_NON_FATAL_DECODING_ERRORS_DETECTED  3u      // Non-fatal errors during binary file processing
 #define EXIT_FAST_FAIL_INCORRECT_STACK           4u      // Incorrect program stack (stack space exhausted)

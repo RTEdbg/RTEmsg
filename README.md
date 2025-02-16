@@ -31,7 +31,7 @@ A ZIP file containing the complete documentation and demo projects is available 
 ## Getting help
 Follow the [Contribution Guidelines](https://github.com/RTEdbg/RTEdbg/blob/master/docs/CONTRIBUTING.md) for bug reports and feature requests regarding RTEmsg. 
 Please use **[RTEdbg.freeforums.net](https://rtedbg.freeforums.net/)** for general discussions about the RTEdbg toolkit. 
-When asking a support question, be clear and take the time to explain your problem properly. If your problem is not strictly related to this toolkit, we recommend that you use [Stack Overflow](https://stackoverflow.com/) or similar forums instead.
+When asking a support question, be clear and take the time to explain your problem properly. If your problem is not strictly related to this toolkit, we recommend that you use [Stack Overflow](https://stackoverflow.com/), [r/Embedded](https://www.reddit.com/r/embedded/) or similar question-and-answer website instead.
 
 ## Repository structure
 This repository contains only the RTEmsg application. See the **[RTEdbg main repository structure](https://github.com/RTEdbg/RTEdbg?tab=readme-ov-file#Repository-Structure)** for links to all RTEdbg repositories. <br>

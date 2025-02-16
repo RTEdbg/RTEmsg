@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -97,9 +97,9 @@ __declspec(noreturn) void report_error_and_show_instructions(const char *error_m
 __declspec(noreturn) void report_fatal_error_and_exit(uint32_t error_code,
     const char *additional_text, size_t additional_data)
 {
-    if (error_code > TOTAL_ERRORS)
+    if ((error_code >= TOTAL_ERRORS) || (error_code < FIRST_FATAL_ERROR))
     {
-        error_code = TOTAL_ERRORS;
+        error_code = FATAL_LAST;        // Unknown error
     }
 
     if (additional_text == NULL)
@@ -340,9 +340,9 @@ static void report_problem_worker(FILE *out, uint32_t error_code, int additional
 
 void report_problem(uint32_t error_code, int additional_data)
 {
-    if (error_code >= TOTAL_ERRORS)
+    if ((error_code >= TOTAL_ERRORS) || (error_code < FIRST_FATAL_ERROR))
     {
-        error_code = FATAL_LAST;
+        error_code = FATAL_LAST;        // Unknown error
     }
 
     if (g_msg.file.error_log != NULL)
@@ -389,7 +389,7 @@ void report_decode_error_summary(void)
         {
             if (g_msg.error_counter[i] > 0)
             {
-                fprintf(g_msg.file.error_log, "\n");
+                fputc('\n', g_msg.file.error_log);
                 fprintf(g_msg.file.error_log,
                     get_message_text(MSG_ERROR_COUNTER),
                     g_msg.error_counter[i],

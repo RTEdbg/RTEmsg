@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -128,6 +128,7 @@ void utf8_print_string(const char *text, size_t print_length)
 int utf8_remove(const char *filename)
 {
     size_t filename_len = strlen(filename);
+    int result;
 
     if ((filename_len == 0) || (filename_len >= MAX_FILEPATH_LENGTH))
     {
@@ -138,20 +139,18 @@ int utf8_remove(const char *filename)
     int len = MultiByteToWideChar(CP_UTF8, 0, filename, (int)filename_len, path, MAX_FILEPATH_LENGTH);
     path[len] = L'\0';
 
-    int rez = -1;
-
     if (len == 0)
     {
         // Could not convert the file name to wide characters
         // Try to remove the file using the original name
-        rez = remove(filename);
+        result = remove(filename);
     }
     else
     {
-        rez = _wremove(path);
+        result = _wremove(path);
     }
 
-    return rez;
+    return result;
 }
 
 
@@ -171,6 +170,7 @@ int utf8_rename(const char *old_name, const char *new_name)
 {
     size_t old_name_len = strlen(old_name);
     size_t new_name_len = strlen(new_name);
+    int result;
 
     if ((old_name_len == 0) || (new_name_len == 0)
         || (old_name_len >= MAX_FILEPATH_LENGTH) || (new_name_len >= MAX_FILEPATH_LENGTH))
@@ -187,20 +187,18 @@ int utf8_rename(const char *old_name, const char *new_name)
     int len2 = MultiByteToWideChar(CP_UTF8, 0, old_name, (int)old_name_len, old_path, MAX_FILEPATH_LENGTH);
     old_path[len2] = L'\0';
 
-    int rez = -1;
-
     if ((len2 == 0) || (len1 == 0))
     {
         // Could not convert the file names to wide characters
         // Try to rename the file using the original names
-        rez = rename(old_name, new_name);
+        result = rename(old_name, new_name);
     }
     else
     {
-        rez = _wrename(old_path, new_path);
+        result = _wrename(old_path, new_path);
     }
 
-    return rez;
+    return result;
 }
 
 
@@ -222,21 +220,21 @@ size_t utf8_truncate(const char *text, size_t length)
         return length;
     }
 
-    if (text[length - 1] & 0x80)        // A multi-byte character?
+    if (text[length - 1] & 0x80)        // A multi-byte UTF-8 character?
     {
         if (text[length - 1] & 0x40)
         {
-            return length - 1;          // Two bytes per character
+            return length - 1;          // Two bytes per multi-byte UTF-8 character
         }
 
         if ((text[length - 2] & 0xe0) == 0xe0)
         {
-            return length - 2;          // Three bytes per character
+            return length - 2;          // Three bytes per multi-byte UTF-8 character
         }
 
         if ((text[length - 3] & 0xf0) == 0xf0)
         {
-            return length - 3;          // Four bytes per character
+            return length - 3;          // Four bytes per multi-byte UTF-8 character
         }
     }
 

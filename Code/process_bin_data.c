@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -162,7 +162,7 @@ __inline asm_msg_t process_the_message_packet(unsigned no_words, uint32_t data)
     g_msg.timestamp.l = (data & 0xFFFFFFFEu) << g_msg.hdr_data.fmt_id_bits;
     uint32_t additional_data = g_msg.fmt_id;
     uint32_t msg_len = get_packet_length(g_msg.fmt_id);
-    // Function returns 0xFFFFFFFF if the message length is unknown
+        // Function returns 0xFFFFFFFF if the message length is unknown
 
     if ((msg_len == 0xFFFFFFFFu) && (no_words > 5u))
     {
@@ -515,7 +515,7 @@ void debug_print_message_hex(uint32_t start_index)
     fprintf(out, "\n  >>> ");
     print_message_number(out, g_msg.message_cnt);
     fprintf(out, " %s: %llu ", get_message_text(MSG_INDEX),
-        start_index + g_msg.already_processed_and_skipped_data);
+        start_index + g_msg.already_processed_data);
 
     if ((g_msg.unfinished_words == 0) && (g_msg.bad_packet_words == 0))
     {
@@ -579,7 +579,7 @@ void debug_print_message_info(uint32_t last_index)
         fprintf(g_msg.file.main_log, "\n  >>>");
         print_message_number(g_msg.file.main_log, g_msg.message_cnt);
         fprintf(g_msg.file.main_log, ", %s: %llu",
-            get_message_text(MSG_INDEX), last_index + g_msg.already_processed_and_skipped_data);
+            get_message_text(MSG_INDEX), last_index + g_msg.already_processed_data);
     }
 }
 

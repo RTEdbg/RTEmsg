@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -37,6 +37,8 @@
 #include "parse_directive.h"
 #include "cmd_line.h"
 #include "utf8_helpers.h"
+
+#pragma comment(linker, "/STACK:8388608")       // Increase stack size to 8 MB
 
 
 /**********************************************/
@@ -141,6 +143,60 @@ static void print_cmd_line_parameters(int argc, char *argv[])
 
 
 /**
+ * @brief Report the file error in the file 'errors.msg' if detected.
+ * 
+ * @param file      Pointer to the file structure
+ * @param file_name Pointer to the file name
+ */
+
+static void check_file_errors(FILE * file, const char* file_name)
+{
+    static bool error_reported = false;
+
+    if ((file == NULL) || (file_name == NULL))
+    {
+        return;
+    }
+
+    if (!ferror(file))
+    {
+        return;
+    }
+
+    if (!error_reported)
+    {
+        fprintf(g_msg.file.error_log, get_message_text(MSG_PROBLEMS_WRITING_TO_OUTPUT_FILES));
+        error_reported = true;
+    }
+
+    fprintf(g_msg.file.error_log, "\n   %s", file_name);
+}
+
+
+/**
+ * @brief Check if any error was detected while printing to the output files.
+ *        If error were detected, report in the file 'errors.msg'.
+ */
+
+static void check_print_errors(void)
+{
+    // Check the default output files
+    check_file_errors(g_msg.file.main_log, RTE_MAIN_LOG_FILE);
+    check_file_errors(g_msg.file.statistics_log, RTE_STAT_MAIN_FILE);
+    check_file_errors(g_msg.file.timestamps, RTE_MSG_TIMESTAMPS_FILE);
+
+    // Check the user defined output files
+    for (size_t i = 32U; i < g_msg.enums_found; i++)
+    {
+        if (g_msg.enums[i].type == OUT_FILE_TYPE)
+        {
+            check_file_errors(g_msg.enums[i].p_file, g_msg.enums[i].file_name);
+        }
+    }
+}
+
+
+/**
  * @brief Prints the full binary file name and creation date, and prepares the date string
  *        for the special format type "%D".
  */
@@ -159,6 +215,10 @@ static void print_data_file_name_and_date(void)
         struct tm *tmp = localtime(&stbuf.st_mtime);
         strftime(g_msg.date_string, BIN_FILE_DATE_LENGTH, "%Y-%m-%d %H:%M:%S", tmp);
         fprintf(out, "\"%s\" %s\n", g_msg.param.data_file_name, g_msg.date_string);
+    }
+    else
+    {
+        fprintf(out, get_message_text(ERR_NO_BIN_FILE_INFO));
     }
 }
 
@@ -386,8 +446,14 @@ static void Process_binary_data_file(int argc, char *argv[])
     }
 
     // Allocate buffer for message processing
-    g_msg.assembled_msg = (uint32_t *)allocate_memory(
-        sizeof(uint32_t) * 4u * (1u + (size_t)g_msg.hdr_data.max_msg_blocks) + 20u, "Asm_msg");
+    size_t buffer_size = sizeof(uint32_t) * 4u * (1u + (size_t)g_msg.hdr_data.max_msg_blocks) + 20u;
+
+    if (buffer_size < (256U + 16U))
+    {
+        buffer_size = 256U + 16U;        // The buffer should accommodate at least the MSGX-style message
+    }
+
+    g_msg.assembled_msg = (uint32_t *)allocate_memory(buffer_size, "Asm_msg");
     prepare_sys_msg_fmt_structure();
 
     print_msg_intro();
@@ -483,6 +549,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    check_print_errors();
     print_execution_time(begin_parsing, end_parsing);
     _fcloseall();
     (void)_wchdir(g_msg.file.start_folder);      // Return to the initial working directory.

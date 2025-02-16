@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -167,7 +167,10 @@ void create_main_log_file(void)
     }
 
 #if defined STREAM_BUFF_SIZE
-    // Allocate a buffer for the stream; a larger buffer may not significantly increase write speed
+    /* Allocate a buffer for the stream; a larger buffer may not significantly increase write speed
+     * The setvbuf function optimizes I/O performance by controlling stream buffering, reducing 
+     * frequent operations and improving efficiency.
+     */
     char *stream_buffer = allocate_memory(STREAM_BUFF_SIZE, "strBuff");
     int rez = setvbuf(g_msg.file.main_log, stream_buffer, _IOFBF, STREAM_BUFF_SIZE);
 #endif
@@ -268,9 +271,9 @@ char *prepare_folder_name(char *name, unsigned error_code)
             len--;
         }
 
-        if (name[len] == '"')
+        if (name[len - 1u] == '"')
         {
-            name[len] = '\0';
+            name[len - 1u] = '\0';
             len--;
         }
     }

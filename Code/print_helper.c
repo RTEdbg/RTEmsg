@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -167,7 +167,7 @@ static void print_decoding_errors_to_file(FILE *out)
 
         if (*text == '\0')
         {
-            // Log information for ERR_INTERNAL_ERROR
+            // Log the raw error data (data1 and data2) to report internal errors (ERR_INTERNAL_ERROR)
             fprintf(out, "\n-->#%u ERR_%03u: 0x%X 0x%X",
                 g_msg.error_log[i].value_number, err_no,
                 g_msg.error_log[i].data1, g_msg.error_log[i].data2);

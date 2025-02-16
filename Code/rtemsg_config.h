@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,8 +14,8 @@
 #define _RTEMSG_CONFIG_H
 
 #define RTEMSG_VERSION            1
-#define RTEMSG_SUBVERSION         0
-#define RTEMSG_REVISION           3
+#define RTEMSG_SUBVERSION         1
+#define RTEMSG_REVISION           0
 
 #define RTEMSG_DEBUG_MODE         0       // Print messages together with their indexes to Errors.log
 

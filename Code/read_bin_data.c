@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -78,7 +78,7 @@ static uint32_t load_bin_words(uint32_t *buffer, uint32_t no_words)
 
     size_t words_read = fread(buffer, sizeof(uint32_t), no_words, g_msg.file.rte_data);
 
-    if (words_read != no_words)
+    if ((words_read != no_words) || ferror(g_msg.file.rte_data))
     {
         report_problem(ERR_READ_BIN_FILE_PROBLEM, (int)words_read);
         fprintf(g_msg.file.main_log, get_message_text(MSG_SIZE_SHOULD_BE), no_words);
@@ -116,7 +116,7 @@ void load_data_block(void)
 
         // Move remaining data to the start of the buffer
         memmove(&g_msg.rte_buffer[0], &g_msg.rte_buffer[g_msg.index], sizeof(uint32_t) * remaining_words);
-        g_msg.already_processed_and_skipped_data += g_msg.index;
+        g_msg.already_processed_data += g_msg.index;
 
         // Calculate available space in the buffer
         space_in_buffer = RTEDBG_BUFFER_SIZE - remaining_words;
@@ -192,6 +192,12 @@ static void load_post_mortem_data_part1(uint32_t data_size, uint32_t index)
     }
 
     fseek(g_msg.file.rte_data, sizeof(rtedbg_header_t) + sizeof(uint32_t) * index, SEEK_SET);
+
+    if (ferror(g_msg.file.rte_data))
+    {
+        report_fatal_error_and_exit(ERR_BIN_DATA_FILE_FSEEK, NULL, errno);
+    }
+
     (void)load_bin_words(g_msg.rte_buffer, data_size);
 
     // Skip initial words with the value 0xFFFFFFFF (if any)
@@ -228,6 +234,12 @@ static void load_post_mortem_data_part2(uint32_t data_size, uint32_t start_index
     if (data_size > 0)
     {
         fseek(g_msg.file.rte_data, sizeof(rtedbg_header_t) + sizeof(uint32_t) * start_index, SEEK_SET);
+
+        if (ferror(g_msg.file.rte_data))
+        {
+            report_fatal_error_and_exit(ERR_BIN_DATA_FILE_FSEEK, NULL, errno);
+        }
+
         uint32_t words_read = load_bin_words(&g_msg.rte_buffer[g_msg.in_size], data_size);
         g_msg.in_size += words_read;
     }
@@ -347,9 +359,9 @@ static bool check_data_size(int64_t data_size)
 
     if (data_size > (int64_t)(buffer_size * sizeof(uint32_t)))
     {
-        // The complete file will be interpreted, although the header shows that there should be
-        // less data. Buffer size is increased to the size of file although the remainder of file
-        // could contain erroneous data.
+        /* The complete file will be interpreted, although the header shows that there should be
+         * less data. Buffer size is increased to the size of file although the remainder of file
+         * could contain erroneous data. */
         report_problem(ERR_BIN_FILE_CONTAINS_TOO_MUCH_DATA, (int)buffer_size);
         buffer_size = (uint32_t)((uint64_t)data_size / sizeof(uint32_t));
         buffer_size_changed = true;
@@ -407,6 +419,12 @@ static void load_post_mortem_data(int64_t data_size)
 
     // Read the complete circular buffer contents
     fseek(g_msg.file.rte_data, sizeof(rtedbg_header_t), SEEK_SET);
+
+    if (ferror(g_msg.file.rte_data))
+    {
+        report_fatal_error_and_exit(ERR_BIN_DATA_FILE_FSEEK, NULL, errno);
+    }
+
     uint32_t words_read = load_bin_words(g_msg.rte_buffer, buffer_size);
 
     if (words_read != buffer_size)
@@ -441,10 +459,10 @@ static void load_post_mortem_data(int64_t data_size)
     {
         if (g_msg.hdr_data.buffer_size_is_power_of_2 && (buffer_size > (2u * 4u)))
         {
-            // If the embedded system circular buffer size (RTE_BUFFER_SIZE) is a power of 2
-            // then (according to the method of limiting the buffer index) four words are
-            // dropped every time. Example: if three words are dropped at the end of
-            // circular buffer then one word has to be dropped at the start.
+            /* If the embedded system circular buffer size (RTE_BUFFER_SIZE) is a power of 2
+             * then (according to the method of limiting the buffer index) four words are
+             * dropped every time. Example: if three words are dropped at the end of
+             * circular buffer then one word has to be dropped at the start. */
             skip_at_start = 4 - skip_at_end;
         }
     }
@@ -481,6 +499,11 @@ static void load_single_shot_data(int64_t data_size)
     // Skip the binary file header
     fseek(g_msg.file.rte_data, sizeof(rtedbg_header_t), SEEK_SET);
 
+    if (ferror(g_msg.file.rte_data))
+    {
+        report_fatal_error_and_exit(ERR_BIN_DATA_FILE_FSEEK, NULL, errno);
+    }
+
     // Load the captured data
     uint32_t words_read = load_bin_words(g_msg.rte_buffer, buffer_size);
     g_msg.in_size = words_read;
@@ -510,8 +533,8 @@ void load_data_from_binary_file(void)
 {
     int64_t size = get_file_size(g_msg.file.rte_data);
 
-    // Ensure file size is a multiple of 4, as 32-bit values are recorded
-    // The check for size >= sizeof(rtedbg_header_t) is performed in load_and_check_rtedbg_header()
+    /* Ensure file size is a multiple of 4, as 32-bit values are recorded.
+     * The check for size >= sizeof(rtedbg_header_t) is performed in load_and_check_rtedbg_header(). */
     if ((size & 3) != 0)
     {
         report_problem(ERR_BIN_FILE_SIZE_NOT_DIVISIBLE_BY_4, 0);
@@ -543,7 +566,8 @@ void load_data_from_binary_file(void)
                 }
             }
 
-            g_msg.complete_file_loaded = true;   // Entire data file has been loaded
+            g_msg.complete_file_loaded = true;
+                // Entire data file has been loaded (unless shortened by check_data_size function)
             fclose(g_msg.file.rte_data);
             break;
 
@@ -555,7 +579,8 @@ void load_data_from_binary_file(void)
                 g_msg.in_size = g_msg.rte_header.last_index;
             }
 
-            g_msg.complete_file_loaded = true;   // Entire data file has been loaded
+            g_msg.complete_file_loaded = true;
+                // Entire data file has been loaded (unless shortened by check_data_size function)
             fclose(g_msg.file.rte_data);
             break;
 
@@ -596,8 +621,8 @@ static void check_logging_mode(void)
                     break;
 
                 default:
-                    // Error is not reported here. It will be reported when the buffer
-                    // size will be checked later (buffer size too large).
+                    /* Error is not reported here. It will be reported when the buffer
+                     * size will be checked later (buffer size too large). */
                     g_msg.hdr_data.logging_mode = MODE_UNKNOWN;
                     break;
             }
@@ -639,7 +664,7 @@ void load_and_check_rtedbg_header(void)
 
     size_t data_read = fread(&g_msg.rte_header, 1, sizeof(g_msg.rte_header), bin_data_file);
 
-    if (data_read != sizeof(g_msg.rte_header))
+    if ((data_read != sizeof(g_msg.rte_header)) || ferror(bin_data_file))
     {
         report_fatal_error_and_exit(FATAL_READ_BIN_DATA_FILE, g_msg.param.data_file_name, ~1uLL);
     }
@@ -661,10 +686,10 @@ void load_and_check_rtedbg_header(void)
         g_msg.rte_header.timestamp_frequency = 1;
     }
 
-    // Use the last timestamp frequency value (from data logging structure).
-    // For applications that switch frequency often the exact frequency is not
-    // known for the first part of decoding - until the first message with 
-    // frequency information (MSG1_SYS_TSTAMP_FREQUENCY) is found in the buffer.
+    /* Use the last timestamp frequency value (from data logging structure).
+     * For applications that switch frequency often the exact frequency is not
+     * known for the first part of decoding - until the first message with 
+     * frequency information (MSG1_SYS_TSTAMP_FREQUENCY) is found in the buffer. */
     g_msg.timestamp.current_frequency = g_msg.rte_header.timestamp_frequency;
 
     // Unpack the values from binary file header for faster execution during the bin data decoding
@@ -679,8 +704,8 @@ void load_and_check_rtedbg_header(void)
                                 / (double)g_msg.timestamp.current_frequency
                                 / (double)(1uLL << (1u + fmt_id_bits));
 
-    // Prepare the values used during message processing in the
-    //   process_the_message_packet() and assemble_message() functions.
+    /* Prepare the values used during message processing in the
+     * process_the_message_packet() and assemble_message() functions. */
     g_msg.hdr_data.fmt_id_bits = fmt_id_bits;
     g_msg.hdr_data.timestamp_and_index_mask = 0xFFFFFFFE & (~(0xFu << (32ul - fmt_id_bits)));
     g_msg.hdr_data.fmt_id_shift = 32u - fmt_id_bits;

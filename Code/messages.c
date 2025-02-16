@@ -1,5 +1,5 @@
 /*
- *Copyright (c) 2024 Branko Premzel.
+ *Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,8 +27,8 @@
  *
  * @param message_code  The code of the message whose text should be returned.
  *
- * @return              Pointer to the message text. If message_code is invalid or
- *                      the message text is NULL, returns a default error message.
+ * @return   Pointer to the message text. If message_code is out of bounds or the
+ *           corresponding message text is NULL, returns a default error message..
  */
 
 const char *get_message_text(uint32_t message_code)
@@ -105,8 +105,7 @@ void load_text_messages(void)
     if (msg_file == NULL)
     {
         report_error_and_exit(TXT_CANT_OPEN_MESSAGES_TXT_FILE,
-            EXIT_FATAL_ERR_CANNOT_OPEN_MESSAGES_TXT
-        );
+            EXIT_FATAL_ERR_CANNOT_OPEN_MESSAGES_TXT);
     }
 
     char message[MAX_TXT_MESSAGE_LENGTH + 1];

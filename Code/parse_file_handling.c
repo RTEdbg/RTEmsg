@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -207,11 +207,12 @@ static bool create_work_file(parse_handle_t *parse_handle)
  *
  * @param src  Pointer to the source format definition file.
  * @param dst  Pointer to the work file.
+ * @param parse_handle   Pointer to the main parse handle structure.
  *
  * @return  true if contents are identical, false otherwise.
  */
 
-static bool compare_and_close_files(FILE *src, FILE *dst)
+static bool compare_and_close_files(FILE *src, FILE *dst, parse_handle_t *parse_handle)
 {
     bool are_identical = false;
 
@@ -224,9 +225,14 @@ static bool compare_and_close_files(FILE *src, FILE *dst)
 
     do
     {
-        // Read data blocks from src and dst
+        // Read data blocks from source and destination files
         size_t src_bytes_read = fread(src_buffer, sizeof(char), CMP_BUFSIZ, src);
         size_t dst_bytes_read = fread(dst_buffer, sizeof(char), CMP_BUFSIZ, dst);
+
+        if (ferror(src) || ferror(dst))
+        {
+            catch_parsing_error(parse_handle, ERR_PARSE_FILE_WORK_CANNOT_COMPARE, "");
+        }
 
         // If the number of bytes read differs, the files are not identical
         if (src_bytes_read != dst_bytes_read)
@@ -341,7 +347,7 @@ static void check_and_replace_header_file(parse_handle_t *parse_handle)
 
         if (!parse_handle->parsing_errors_found)
         {
-            same_contents = compare_and_close_files(header_file, parse_handle->p_fmt_work_file);
+            same_contents = compare_and_close_files(header_file, parse_handle->p_fmt_work_file, parse_handle);
         }
         else
         {
@@ -358,6 +364,12 @@ static void check_and_replace_header_file(parse_handle_t *parse_handle)
             }
 
             return;
+        }
+
+        if (ferror(parse_handle->p_fmt_work_file))
+        {
+            catch_parsing_error(parse_handle,
+                ERR_PARSE_FILE_CANNOT_WRITE_TO_WORK_FILE, parse_handle->work_file_name);
         }
 
         // Remove the header file to replace it with the work file
@@ -415,7 +427,8 @@ void check_and_replace_work_file(parse_handle_t *parse_handle)
 
     if (!parse_handle->parsing_errors_found)
     {
-        same_contents = compare_and_close_files(parse_handle->p_fmt_file, parse_handle->p_fmt_work_file);
+        same_contents =
+            compare_and_close_files(parse_handle->p_fmt_file, parse_handle->p_fmt_work_file, parse_handle);
     }
     else
     {
@@ -506,21 +519,26 @@ void read_file_to_indexed_text(const char *filename, parse_handle_t *parse_handl
 
     unsigned char *str = allocate_memory((size_t)(file_size + 2), "Yfile");
     size_t no_read = fread(str + 1, 1, (size_t)file_size, file);
-    str[no_read + 1] = 0;
+        // The actual length is less for Windows OS because all "\r\n" are read as '\n'.
+
+    if (ferror(file))
+    {
+        catch_parsing_error(parse_handle, ERR_PARSE_IN_FILE_SELECT_ERROR, filename);
+    }
+
     unsigned char *start_line = str;
     unsigned char *pos = str + 1;
     size_t no_found = 0;
+    size_t line_length = 1;
 
-    while ((*pos != 0) && (*(pos + 1) != 0))
+    while ((size_t)(pos - str) < no_read)
     {
-        if ((*pos == '\n') || (*pos == 0))
+        if (*pos == '\n')
         {
-            size_t line_length = pos - start_line;
+            line_length = pos - start_line;
 
             if ((line_length > 256) || (line_length < 2))
             {
-                *start_line = 0;
-                fclose(file);
                 catch_parsing_error(parse_handle, ERR_PARSE_IN_FILE_SELECT_INVALID_OPTIONS, filename);
             }
 
@@ -531,6 +549,9 @@ void read_file_to_indexed_text(const char *filename, parse_handle_t *parse_handl
 
         pos++;
     }
+
+    line_length = pos - start_line;
+    *start_line = (unsigned char)(line_length - 1);
 
     if (no_found < 2)
     {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -49,7 +49,7 @@ unsigned assign_fmt_id(unsigned no_fmt_ids, msg_data_t *p_msg_data)
 {
     if (no_fmt_ids == 0)
     {
-        return 0xFFFFFFFF;
+        return 0xFFFFFFFF;      // Error
     }
 
     // Locate the first unassigned format ID and update the index to skip already assigned IDs.
@@ -92,7 +92,17 @@ unsigned assign_fmt_id(unsigned no_fmt_ids, msg_data_t *p_msg_data)
 
     if (fmt_id_assigned)
     {
-        uint32_t new_limit = fmt_id + no_fmt_ids;
+        uint32_t new_limit = 0;
+
+        if (((fmt_id + no_fmt_ids) < g_msg.hdr_data.topmost_fmt_id)
+            && (no_fmt_ids < g_msg.hdr_data.topmost_fmt_id))
+        {
+            new_limit = fmt_id + no_fmt_ids;
+        }
+        else
+        {
+            return 0xFFFFFFFF;      // Error
+        }
 
         if (new_limit > g_msg.fmt_ids_defined)
         {
@@ -183,7 +193,7 @@ static void print_indexed_text(FILE *out, unsigned index, const char *text)
             break;
         }
 
-        text++;         // Skip ','
+        text++;         // Move to the next text after the comma
     }
 
     if (*text == 0)     // Text with the specified index was not found.
@@ -238,15 +248,15 @@ static const char *get_enums_name(unsigned index)
 
 static void print_single_value_formatting_data(FILE *out, value_format_t *p_val_fmt)
 {
-    const char *fmt_s = p_val_fmt->fmt_string;
+    const char *fmt_string = p_val_fmt->fmt_string;
 
     if (p_val_fmt->fmt_string == NULL)
     {
-        fmt_s = "undefined";
+        fmt_string = "undefined";
     }
     else
     {
-        fmt_s = strip_newlines_and_shorten_string(fmt_s, '"');
+        fmt_string = strip_newlines_and_shorten_string(fmt_string, '"');
     }
 
     const char *enums_name = "";
@@ -268,7 +278,7 @@ static void print_single_value_formatting_data(FILE *out, value_format_t *p_val_
         copy_to_main = ">>";
     }
 
-    fprintf(out, "%s\t%s%s\t", fmt_s, copy_to_main, enums_name);
+    fprintf(out, "%s\t%s%s\t", fmt_string, copy_to_main, enums_name);
 
     switch (p_val_fmt->fmt_type)
     {

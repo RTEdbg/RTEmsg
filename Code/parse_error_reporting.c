@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -195,7 +195,7 @@ static void print_parsing_error(parse_handle_t *parse_handle,
                 break;
 
             default:
-                // Character after the '%' not recognized
+                // Unrecognized format specifier
                 printf("???");
                 fprintf(g_msg.file.error_log, "???");
                 break;

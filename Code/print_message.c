@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -47,10 +47,9 @@ typedef union convert_f64
  * @param out      Output file to which the text will be written.
  * @param value    Binary value to be written.
  * @param size     Number of binary digits to be printed.
- * @param max_size Maximum number of bits to be processed.
  */
  
-static void print_binary64(FILE *out, uint64_t value, uint32_t size, uint32_t max_size)
+static void print_binary64(FILE *out, uint64_t value, uint32_t size)
 {
     if (size == 0)
     {
@@ -58,9 +57,9 @@ static void print_binary64(FILE *out, uint64_t value, uint32_t size, uint32_t ma
         return;
     }
 
-    if (size > max_size)
+    if (size > 64U)
     {
-        size = max_size;
+        size = 64U;
     }
 
     uint64_t mask = 1uLL << (size - 1uLL);
@@ -196,7 +195,8 @@ static void value_scaling(value_format_t *fmt, double data)
     {
         g_msg.value.data_double = (data + fmt->offset) * fmt->mult;
 
-        // Convert the scaled double value to integer if the format type is integer (%d, %u, etc.).
+        /* Convert the scaled double value to integer and unsigned integer also to 
+         * enable printing with %d, %u, etc. */
         g_msg.value.data_i64 = (int64_t)(g_msg.value.data_double + 0.5);
         g_msg.value.data_u64 = (uint64_t)(g_msg.value.data_double + 0.5);
     }
@@ -252,7 +252,6 @@ static void extract_value_from_message(value_format_t *fmt)
 
     if (size == 0)         // If size is 0, use the entire message
     {
-        // No need to check the bit address; address zero will be used by the printing function
         return;
     }
 
@@ -621,7 +620,8 @@ static void prepare_time_difference(value_format_t *fmt)
  * @brief Prepares a value for printing by setting up the necessary information
  *        for the 'print_message()' function. The values are stored in the
  *        'g_msg.value' structure. Each data type is prepared, if possible, as a
- *        64-bit integer, 64-bit unsigned integer, double, and string.
+ *        64-bit integer, 64-bit unsigned integer, double, and (if possible) as
+ *        string also.
  * @note  The 'g_msg.value' is initialized to zero at the start of processing.
  *        If the value cannot be set correctly, it remains zero for printing.
  *
@@ -736,41 +736,49 @@ static void prepare_value(value_format_t *fmt, bool divisible_by_8)
  *
  * @param y_text      Pointer to the buffer containing indexed text.
  * @param txt_buffer  Buffer where the selected text will be copied.
+ * @param buf_size    Size of txt_buffer including space for null terminator.
  * @param index       Index of the desired text in 'y_text'.
  *
- * @return            Pointer to the copied text in the buffer.
+ * @return            Pointer to the copied text in the buffer, or TXT_UNDEFINED_TEXT if error.
  */
 
-static const char *copy_selected_text(char *y_text, char *txt_buffer, unsigned index)
+static const char* copy_selected_text(const char* y_text, char* txt_buffer, size_t buf_size, unsigned index)
 {
-    const char *text = TXT_UNDEFINED_TEXT;
-    size_t text_length = 0;
-    *txt_buffer = '\0';
+    txt_buffer[0] = '\0';
+    const char* text = TXT_UNDEFINED_TEXT;
 
-    if ((y_text != NULL) && (*y_text != 0))
+    if ((y_text == NULL) || (txt_buffer == NULL) || (buf_size == 0))
     {
-        if (*y_text != 0)
+        return text;
+    }
+
+    // Size of the first text
+    size_t text_length = (unsigned char)*y_text;
+    if (text_length == 0)
+    {
+        return text;
+    }
+
+    // Navigate to desired index
+    const char* current = y_text;
+    for (size_t i = 0; i < index; i++)
+    {
+        if (current[1u + text_length] == 0)   // Last message in the list?
         {
-            text_length = (unsigned char)*y_text;
-
-            for (size_t i = 0; i < index; i++)
-            {
-                if (y_text[1 + text_length] == 0)   // Already at the last message in the list?
-                {
-                    break;
-                }
-
-                y_text += text_length + 1u;         // Skip the current message
-                text_length = (unsigned char)*y_text;
-            }
+            break;
         }
 
-        if (text_length > 0)
-        {
-            strncpy(txt_buffer, y_text + 1u, text_length);
-            txt_buffer[text_length] = '\0';
-            text = txt_buffer;
-        }
+        // Move to next message
+        current += text_length + 1u;
+        text_length = (unsigned char)*current;
+    }
+
+    // Copy selected text if it fits in the buffer
+    if ((text_length > 0) && (text_length < buf_size))
+    {
+        memcpy(txt_buffer, current + 1u, text_length);
+        txt_buffer[text_length] = '\0';
+        text = txt_buffer;
     }
 
     return text;
@@ -808,7 +816,7 @@ static const char *get_selected_text(rte_enum_t in_file, unsigned index)
             }
             else
             {
-                copy_selected_text(y_text, txt_buffer, index);
+                copy_selected_text(y_text, txt_buffer, sizeof(txt_buffer), index);
             }
         }
         else
@@ -1183,12 +1191,12 @@ static void print_binary_value_to_file(FILE *out, value_format_t *fmt)
 
     if (fmt->data_type == VALUE_UINT64)
     {
-        print_binary64(out, g_msg.value.data_u64, fmt->data_size, fmt->data_size);
+        print_binary64(out, g_msg.value.data_u64, fmt->data_size);
 
         if (fmt->print_copy_to_main_log)
         {
             fprintf(g_msg.file.main_log, fmt->fmt_string);
-            print_binary64(g_msg.file.main_log, g_msg.value.data_u64, fmt->data_size, fmt->data_size);
+            print_binary64(g_msg.file.main_log, g_msg.value.data_u64, fmt->data_size);
         }
     }
     else
@@ -1541,7 +1549,7 @@ void print_message(void)
     // Print the message information for the Main.log file (mandatory data)
     fprintf(g_msg.file.main_log, "\n");
 
-    // Flag the message number with an asterisk if the timestamp is flagged as suspicious
+    // Flag the message number with a '#' symbol if the timestamp is flagged as suspicious
     if (g_msg.timestamp.mark_problematic_tstamps)
     {
         fprintf(g_msg.file.main_log, "#");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -25,7 +25,7 @@
 #define TXT_INTERNAL_MESSAGE_TEXT_UNDEFINED             "Internal error - message text undefined"
 #define TXT_REMAINING_WORDS                             "remaining words"
 #define TXT_UNDEFINED_TEXT                              "<undefined text>"
-#define TXT_CANT_OPEN_MESSAGES_TXT_FILE                 "Cannot open the 'Messages.txt' file. It must be in the same folder as RTEmsg.exe."
+#define TXT_CANT_OPEN_MESSAGES_TXT_FILE                 "Cannot open or read the Messages.txt file. It must be in the same folder as RTEmsg.exe."
 #define TXT_NOT_ENOUGH_MESSAGES_IN_MESSAGES_TXT_FILE    "Not enough messages in the 'Messages.txt' file."
 #define TXT_MESSAGES_TXT_MUST_CONTAIN                   "The 'Messages.txt' file should contain %u lines.\n"
 #define TXT_JUST_N_MESSAGES_FOUND                       "Only %u messages found. "

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -108,16 +108,16 @@ small_tstamp_difference(uint32_t *tstamp_h_counter, uint32_t *old_tstamp_l, uint
 
     if ((time_diff >= 0) && (time_diff <= g_msg.param.max_positive_tstamp_diff))
     {
-        // New timestamp is a bit larger than the old one and no overflow
-        // No need to update the tstamp_h_counter
+        /* New timestamp is a bit larger than the old one and no overflow.
+         * No need to update the tstamp_h_counter. */
         *old_tstamp_l = new_tstamp_l;
         return true;
     }
 
     if ((time_diff < 0) && (time_diff >= g_msg.param.max_negative_tstamp_diff))
     {
-        // New timestamp smaller than the old one and no timestamp.l underflow
-        // No need to update the tstamp_h_counter and old_tstamp_l
+        /* New timestamp smaller than the old one and no timestamp.l underflow
+         * No need to update the tstamp_h_counter and old_tstamp_l. */
         return true;
     }
 
@@ -133,8 +133,8 @@ small_tstamp_difference(uint32_t *tstamp_h_counter, uint32_t *old_tstamp_l, uint
     if ((g_msg.timestamp.old < (NORMALIZED_TSTAMP_PERIOD / 2ull))
         && (time_diff >= (NORMALIZED_TSTAMP_PERIOD + g_msg.param.max_negative_tstamp_diff)))
     {
-        // The timestamp appears to be from a previous timestamp period
-        // and the timestamp search values do not have to be updated.
+        /* The timestamp appears to be from a previous timestamp period
+         * and the timestamp search values do not have to be updated. */
         return true;
     }
 
@@ -164,8 +164,12 @@ static inline bool long_timestamp_found(void)
     uint32_t data = 0xFFFFFFFF;
     uint32_t old_timestamp_l = g_msg.timestamp.l;
     uint32_t tstamp_h_counter = 0;
-
     uint32_t data_words = 0;
+
+    if (g_msg.index >= g_msg.in_size)       // Bad index value?
+    {
+        return false;
+    }
 
     for (uint32_t index = g_msg.index; index < g_msg.in_size; )
     {
@@ -178,8 +182,8 @@ static inline bool long_timestamp_found(void)
         {
             if (++data_words > 4ul)
             {
-                // Invalid message - max. 4 data words possible
-                // Stop the search for a long_timestamp if faulty data is found
+                /* Invalid message - max. 4 data words possible.
+                 * Stop the search for a long_timestamp if faulty data is found. */
                 return false;
             }
 
@@ -219,8 +223,8 @@ static inline bool long_timestamp_found(void)
             {
                 if (small_tstamp_difference(&tstamp_h_counter, &old_timestamp_l, new_timestamp_l) == false)
                 {
-                    // Do not use this long timestamp since the timestamp difference from the previous
-                    // timestamp is large (transmissions or logging have been interrupted).
+                    /* Do not use this long timestamp since the timestamp difference from the previous
+                     * timestamp is large (transmissions or logging have been interrupted). */
                     return false;
                 }
 
@@ -231,10 +235,10 @@ static inline bool long_timestamp_found(void)
             return false;
         }
 
-        // Check if the timestamp difference between the preceding and current message is large.
-        // For large differences, assume that transmissions or logging have been interrupted and
-        // interrupt the search for a long timestamp. The search will continue after the current
-        // message is decoded.
+        /* Check if the timestamp difference between the preceding and current message is large.
+         * For large differences, assume that transmissions or logging have been interrupted and
+         * interrupt the search for a long timestamp. The search will continue after the current
+         * message is decoded. */
         if (small_tstamp_difference(&tstamp_h_counter, &old_timestamp_l, new_timestamp_l) == false)
         {
             return false;
@@ -267,21 +271,23 @@ static inline void process_timestamp_value(uint64_t *p_new_timestamp)
 
     if ((time_diff >= 0) && (time_diff <= g_msg.param.max_positive_tstamp_diff))
     {
-        // New timestamp is slightly larger than the old one, no overflow occurred
-        // No need to update the high part of the timestamp
+        /* New timestamp is slightly larger than the old one, no overflow occurred
+         * No need to update the high part of the timestamp */
     }
     else if ((time_diff < 0) && (time_diff >= g_msg.param.max_negative_tstamp_diff))
     {
-        // New timestamp smaller than the old one and no timestamp.l underflow
-        // No need to update timestamp.h and timestamp.old
+        /* New timestamp smaller than the old one and no timestamp.l underflow
+         * No need to update timestamp.h and timestamp.old */
         update_old_tstamp_value = false;
     }
     else if ((g_msg.timestamp.old >= (NORMALIZED_TSTAMP_PERIOD / 2ull))
              && (time_diff <= -(NORMALIZED_TSTAMP_PERIOD - g_msg.param.max_positive_tstamp_diff))
              && (!g_msg.timestamp.no_previous_tstamp))
     {
-        // The low part of the timestamp overflowed, increment the high part
-        // Ensure at least four messages have been processed since the last increment
+        /* The low part of the timestamp overflowed, increment the high part.
+         * Ensure at least four messages have been processed since the last increment.
+         * This is an ad-hoc solution for cases where data loss has occurred due to
+         * insufficient bandwidth to the host, system reset, etc. */
         if ((g_msg.message_cnt - g_msg.timestamp.msg_long_tstamp_incremented) >= 4ul)
         {
             g_msg.timestamp.msg_long_tstamp_incremented = g_msg.message_cnt;
@@ -294,8 +300,8 @@ static inline void process_timestamp_value(uint64_t *p_new_timestamp)
              && (time_diff >= (NORMALIZED_TSTAMP_PERIOD + g_msg.param.max_negative_tstamp_diff))
              && (!g_msg.timestamp.no_previous_tstamp))
     {
-        // The timestamp.l seems to be from the previous timestamp period
-        // The (timestamp.h - 1) will be used for the current message timestamp
+        /* The timestamp.l seems to be from the previous timestamp period.
+         * The (timestamp.h - 1) will be used for the current message timestamp. */
         uint32_t stamp = 0;
 
         if (g_msg.timestamp.h > 0)
@@ -308,8 +314,8 @@ static inline void process_timestamp_value(uint64_t *p_new_timestamp)
     }
     else
     {
-        // Large timestamp difference detected, initiate search for the long timestamp message
-        // Assume data transmission or logging was interrupted
+        /* Large timestamp difference detected, initiate search for the long timestamp message.
+         * Assume data transmission or logging was interrupted. */
         search_next_long_tstamp = true;
         g_msg.timestamp.mark_problematic_tstamps = !g_msg.timestamp.no_previous_tstamp;
     }
@@ -326,8 +332,8 @@ static inline void process_timestamp_value(uint64_t *p_new_timestamp)
         // Search for the next long timestamp
         if (long_timestamp_found())
         {
-            // Update the current message timestamp based on the next long timestamp
-            // The long_timestamp_found() function updates the high part of the timestamp
+            /* Update the current message timestamp based on the next long timestamp.
+             * The long_timestamp_found() function updates the high part of the timestamp. */
             *p_new_timestamp = (((uint64_t)g_msg.timestamp.h) << 32u) | (uint64_t)g_msg.timestamp.l;
             g_msg.timestamp.old = g_msg.timestamp.l;
         }
@@ -354,6 +360,7 @@ static inline void prepare_timestamp_value(void)
     else if (g_msg.fmt_id != MSG1_SYS_STREAMING_MODE_LOGGING)
     {
         process_timestamp_value(&new_timestamp);
+            // TODO: Check if the g_msg.timestamp.old should be set here (always or on first encounter)
     }
 
     g_msg.timestamp.no_previous_tstamp = false;

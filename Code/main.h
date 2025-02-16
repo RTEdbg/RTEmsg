@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -216,7 +216,7 @@ typedef struct _rte_msg_t
     uint32_t index;                     /*!< Index to the rte_buffer */
     uint32_t message_cnt;               /*!< Counter of all messages found - including messages with problems */
     uint32_t multiple_logging;          /*!< Number of separate snapshots in the binary data file */
-    size_t   already_processed_and_skipped_data; /*!< Total number of data already processed and overwritten in the working buffer */
+    size_t   already_processed_data;    /*!< Total number of data already processed in the working buffer */
     uint32_t in_size;                   /*!< Total size of the loaded buffer [number of words] */
     uint32_t error_warning_in_msg;      /*!< Number of message in which a warning is displayed after the error(s) - if any */
     uint32_t *rte_buffer;               /*!< Pointer to data from the embedded system circular data logging buffer */
@@ -236,7 +236,9 @@ typedef struct _rte_msg_t
     uint32_t fmt_align_value;           /*!< Minimal value of the next format ID */
 
     /* Error counting during a single message decoding */
-    uint32_t unfinished_words;          /*!< Number of consecutive words with a value of 0xFFFFFFFF */
+    uint32_t unfinished_words;          /*!< Number of consecutive words with a value of 0xFFFFFFFF.
+                                         *   Such a value indicates that the default value in the buffer was not 
+                                         * overwritten with the logged one during writing to the circular buffer.*/
     uint32_t bad_packet_words;          /*!< Number of DATA words in a packet without a FMT word */
     
     /* Error information logged during a single message decoding */

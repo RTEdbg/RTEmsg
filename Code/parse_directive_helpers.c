@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -173,7 +173,7 @@ bool parse_quoted_arg(char **position, char *buffer, size_t result_size)
             return true;
         }
 
-        buffer[index++] = c;
+        buffer[index++] = (char)c;
     }
 
     return false; // The closing quote not found
@@ -194,7 +194,7 @@ unsigned parse_unsigned_int(parse_handle_t *parse_handle)
     char *end_position = NULL;
     unsigned long value = strtoul(*position, &end_position, 10);
 
-    if (end_position <= *position)
+    if ((end_position <= *position) || (errno == ERANGE))
     {
         catch_parsing_error(parse_handle, ERR_PARSE_EXPECTING_NUMBER, *position);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Branko Premzel.
+ * Copyright (c) Branko Premzel.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,14 +34,14 @@
 
 __declspec(noinline) void check_stack_space(void)
 {
-    ULONG_PTR low, high;
-    GetCurrentThreadStackLimits(&low, &high);
-    ULONG_PTR low_addr = (ULONG_PTR)(&low);
-    ULONG_PTR remaining = low_addr - low;
+    ULONG_PTR low_limit, high_limit;
+    GetCurrentThreadStackLimits(&low_limit, &high_limit);
+    ULONG_PTR current_low_addr = (ULONG_PTR)(&low_limit);
+    ULONG_PTR remaining = current_low_addr - low_limit;
 
     // Check stack integrity - remaining space should not exceed total stack size
     // or be critically low (< 5KB)
-    if ((remaining > (high - low)) || (remaining < 5000))
+    if ((remaining > (high_limit - low_limit)) || (remaining < 5000))
     {
         __fastfail(EXIT_FAST_FAIL_INCORRECT_STACK);
     }
