@@ -15,7 +15,7 @@
 * Added command line argument -ts
 * Several small fixes - most of them translation to english and language correction of comments and variable/function names
 
-### v1.01.00 - 2025-02-11
+### v1.01.00 - 2025-02-16
 * Improved robustness
 * Enhanced code documentation
 * Fixed indexed text processing bug
