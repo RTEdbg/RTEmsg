@@ -19,3 +19,6 @@
 * Improved robustness
 * Enhanced code documentation
 * Fixed indexed text processing bug
+
+### v1.01.01 - 2025-05-10
+* Change to enable execution also under Windows 7

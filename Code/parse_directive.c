@@ -16,6 +16,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <Windows.h>
+#include <versionhelpers.h>
 #include "parse_directive_helpers.h"
 #include "parse_fmt_string.h"
 #include "parse_directive.h"
@@ -34,6 +35,12 @@
 
 __declspec(noinline) void check_stack_space(void)
 {
+    if (!IsWindows8OrGreater())
+    {
+        // The GetCurrentThreadStackLimits() kernel function is only available on Windows 8 or higher.
+        return;
+    }
+
     ULONG_PTR low_limit, high_limit;
     GetCurrentThreadStackLimits(&low_limit, &high_limit);
     ULONG_PTR current_low_addr = (ULONG_PTR)(&low_limit);
