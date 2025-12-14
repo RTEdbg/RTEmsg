@@ -37,6 +37,7 @@
 #include "parse_directive.h"
 #include "cmd_line.h"
 #include "utf8_helpers.h"
+#include "vcd.h"
 
 #pragma comment(linker, "/STACK:8388608")       // Increase stack size to 8 MB
 
@@ -197,16 +198,14 @@ static void check_print_errors(void)
 
 
 /**
- * @brief Prints the full binary file name and creation date, and prepares the date string
- *        for the special format type "%D".
+ * @brief Print the full binary file name and creation date to a file,
+ *        and prepare the date string for the special format type "%D".
+ * 
+ * @param out Pointer to the output file.
  */
 
-static void print_data_file_name_and_date(void)
+void print_data_file_name_and_date(FILE * out)
 {
-    FILE *out = g_msg.file.main_log;
-
-    fprintf(out, TXT_MSG_RTEMSG_VERSION, RTEMSG_VERSION, RTEMSG_SUBVERSION, RTEMSG_REVISION, __DATE__);
-
     struct _stat stbuf;
     int rez = _stat(g_msg.param.data_file_name, &stbuf);
     if (rez == 0)
@@ -220,6 +219,18 @@ static void print_data_file_name_and_date(void)
     {
         fprintf(out, get_message_text(ERR_NO_BIN_FILE_INFO));
     }
+}
+
+
+/**
+ * @brief Print the RTEmsg version to a file.
+ *
+ * @param out Pointer to the output file.
+ */
+
+void print_rtemsg_version(FILE* out)
+{
+    fprintf(out, TXT_MSG_RTEMSG_VERSION, RTEMSG_VERSION, RTEMSG_SUBVERSION, RTEMSG_REVISION, __DATE__);
 }
 
 
@@ -411,7 +422,7 @@ static void prepare_sys_msg_fmt_structure(void)
     msg_data_t *p_fmt = allocate_memory(sizeof(msg_data_t), "sysFmt");
     g_fmt[MSG1_SYS_STREAMING_MODE_LOGGING] = p_fmt;
     p_fmt->msg_len = 4u;
-    p_fmt->msg_type = TYPE_MSG0_4;
+    p_fmt->msg_type = TYPE_MSG0_8;
     p_fmt->message_name = "sys";
 }
 
@@ -427,7 +438,8 @@ static void Process_binary_data_file(int argc, char *argv[])
 {
     create_main_log_file();
     load_and_check_rtedbg_header();     // Read and verify the header
-    print_data_file_name_and_date();    // Print header information
+    print_rtemsg_version(g_msg.file.main_log);          // RTEmsg version and date
+    print_data_file_name_and_date(g_msg.file.main_log); // Binary data file info
     print_cmd_line_parameters(argc, argv);
     print_bin_file_header_info();
     check_timestamp_diff_values();      // Check the values of the -ts command line argument (the timestamp period is known here)
@@ -458,6 +470,7 @@ static void Process_binary_data_file(int argc, char *argv[])
 
     print_msg_intro();
     process_bin_data_worker();           // Process the loaded binary data
+    vcd_finalize_files();                // Finalize VCD output files (if any)
     write_statistics_to_file();          // Generate various statistics files (if enabled)
     report_decode_error_summary();
     print_notes_and_warnings();
@@ -524,6 +537,7 @@ int main(int argc, char *argv[])
         return EXIT_FATAL_FMT_PARSING_ERRORS;
     }
 
+    set_tags_for_add_newline_to_main_log();
     print_format_decoding_information();
     dump_filter_names_to_file();
 

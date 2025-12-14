@@ -26,6 +26,7 @@
 #include "files.h"
 #include "errors.h"
 #include "decoder.h"
+#include "vcd.h"
 
 
 /**
@@ -284,6 +285,12 @@ static void parse_fmt_text(parse_handle_t *parse_handle)
     }
 
     process_escape_sequences(text_after_quote, MAX_INPUT_LINE_LENGTH - 1);
+
+    if (IS_A_VCD_TYPE(parse_handle->special_fmt) && (!parse_handle->special_fmt_detected))
+    {
+        vcd_check_variable_format(parse_handle, text_after_quote);
+    }
+
     separate_fmt_strings(text_after_quote, parse_handle);
 
     // Reset the selected files (files to which the print output will be directed)
@@ -297,6 +304,14 @@ static void parse_fmt_text(parse_handle_t *parse_handle)
     if (*(*position) != '\0')
     {
         catch_parsing_error(parse_handle, ERR_PARSE_SURPLUS_TEXT, *position);
+    }
+
+    if (IS_A_VCD_TYPE(parse_handle->special_fmt))
+    {
+        parse_handle->current_format->special_fmt = VCD_FINALIZE;
+        parse_handle->special_fmt = VCD_NONE;
+        parse_handle->special_fmt_detected = false;
+        g_msg.vcd_files_processed = true;
     }
 }
 
@@ -386,6 +401,17 @@ static void parse_select_out_file(parse_handle_t *parse_handle)
     if (double_greater_than_sign)
     {
         parse_handle->print_to_main_log = true;
+    }
+
+    if (g_msg.enums[parse_handle->current_out_file_idx].vcd_data != NULL)
+    {
+        parse_handle->special_fmt = VCD_WORK;
+        
+        if (double_greater_than_sign)
+        {
+            catch_parsing_error(parse_handle,
+                ERR_PARSE_COPY_TO_MAIN_NOT_ALLOWED_FOR_A_VCD_FILE_TYPE, parsed_name);
+        }
     }
 }
 
@@ -683,6 +709,21 @@ static void parse_out_file(parse_handle_t *parse_handle)
 
     check_closing_bracket(parse_handle, position);
 
+    // Check if this is a special output file
+    if (is_a_vcd_file(file_path))
+    {
+        // Allocate a structure for VCD file data
+        g_msg.enums[g_msg.enums_found].vcd_data = allocate_memory(sizeof(vcd_file_data_t), "vcd_data");
+        
+        // Do not write TsJumpBack values to VCD files until first error is detected
+        g_msg.enums[g_msg.enums_found].vcd_data->last_timestamp_error_value = '0';
+
+        if (*parsedInitText != '\0')
+        {
+            catch_parsing_error(parse_handle, ERR_PARSE_VCD_FILE_INIT_TEXT_NOT_ALLOWED, *position);
+        }
+    }
+
     // Skip file creation if only formatting definitions are checked and compiled
     if (g_msg.param.check_syntax_and_compile == 0)
     {
@@ -798,6 +839,8 @@ static void parse_input_line(parse_handle_t *parse_handle, char *file_line)
 
     char *pos = file_line;
     skip_whitespace(&pos);
+    parse_handle->special_fmt = VCD_NONE;   // Reset special file type handling
+    parse_handle->special_fmt_detected = false;
 
     if (*pos == '#')    // Ignore C directives added by RTEmsg
     {

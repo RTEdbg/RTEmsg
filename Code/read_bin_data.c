@@ -909,7 +909,7 @@ void print_msg_intro(void)
 
     // Print the unit used for timestamp values
     fprintf(g_msg.file.main_log, get_message_text(MSG_MAIN_INTRO), unit_txt);
-    fprintf(g_msg.file.main_log, "\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+    fprintf(g_msg.file.main_log, "\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
 }
 
 /*==== End of file ====*/

@@ -6,13 +6,19 @@
 
 **RTEmsg** is a Windows-based application that decodes binary captured data. It decodes according to format definition header files. The application is also a pre-build tool for syntax checking format definition files and enumerating format IDs and filter numbers. It inserts #define directives with filter and format ID numbers. See the *RTEdbg manual* for a detailed description - sections *RTEmsg MESSAGE DECODING APPLICATION* and *FORMAT DEFINITIONS*.
 
-The RTEmsg application is part of the **[RTEdbg toolkit](https://github.com/RTEdbg/RTEdbg)**. With this toolkit, it is possible to instrument the firmware of embedded systems and log data in real time. Since the data is not encoded or tagged, logging is very fast. Each logged block of data contains an index (format ID) that specifies which format definition should be used for decoding. The assignment of numbers to format IDs is automatic and transparent to the programmer. Format definitions are printf-style strings familiar to programmers. See the key benefits and features of the toolkit in the **[RTEdbg Toolkit Presentation](https://github.com/RTEdbg/RTEdbg/releases/download/Documentation/RTEdbg.Presentation.pdf)**.
+The **RTEmsg** application is part of the **[RTEdbg toolkit](https://github.com/RTEdbg/RTEdbg)**. With this toolkit, it is possible to instrument the firmware of embedded systems and log data in real time. Since the data is not encoded or tagged, logging is very fast. Each logged block of data contains an index (format ID) that specifies which format definition should be used for decoding. The assignment of numbers to format IDs is automatic and transparent to the programmer. Format definitions are printf-style strings familiar to programmers. See the key benefits and features of the toolkit in the **[RTEdbg Toolkit Presentation](https://github.com/RTEdbg/RTEdbg/releases/download/Documentation/RTEdbg.Presentation.pdf)**.
+
+The **RTEmsg** application executes on the host PC. Its primary function is to read raw, binary log data and convert it into human-readable or machine readable output formats, simulating the output of an `fprintf()` function call. RTEmsg is highly flexible, allowing the user to output logged values into multiple output files and formats simultaneously. These include:
+* Text log files (for general reading/analyzing).
+* CSV files (ideal for tabular processing, graphing, and analysis using spreadsheet software).
+* VCD (Value Change Dump) files. This is the standard format for visualizing signals over time and performing detailed timing analysis of firmware execution using waveform tools like **[GTKWave](https://gtkwave.github.io/gtkwave/index.html)**.
+* Special text files used for test automation.
 
 Coding the RTEmsg application in C was done for two main reasons:
-1. The data decoding should be as fast as possible, so that the programmers don't have to wait long to analyze the data.
-2. The binary data decoding is based on the C library function fprintf(). It is actually fprintf() running on the host instead of the embedded system.
+1. Data decoding must be exceptionally fast to minimize programmer waiting time during analysis. This speed is especially critical when running and analyzing test results frequently and iteratively.
+2. The binary data decoding is based on the C library function fprintf(). The complete solution is actually fprintf() running on the host instead of the embedded system.
 
-The RTEmsg application was developed using the Visual Studio 2022 Community Edition toolchain. The code currently runs only on the Windows operating system. The main author is currently working on other parts of the RTEdbg project and porting RTEmsg is at the bottom of the to-do list. Credits go to Stefan Milivojčev, who participated in the development of the RTEmsg format definition parser as part of his master's thesis and helped with the Github workflows.
+The **RTEmsg** application was developed using the Visual Studio 2022 Community Edition toolchain. The code currently runs only on the Windows operating system. The main author is currently working on other parts of the RTEdbg project and porting RTEmsg is at the bottom of the to-do list. Credits go to Stefan Milivojčev, who participated in the development of the RTEmsg format definition parser as part of his master's thesis and helped with the Github workflows.
 
 The following three configurations are available in the project
 * **Debug** - basic debugging (default Visual Studio toolchain)

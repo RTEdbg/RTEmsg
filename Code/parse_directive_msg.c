@@ -33,12 +33,12 @@ static unsigned parse_msg_num(parse_handle_t *parse_handle)
 {
     unsigned msg_num = parse_unsigned_int(parse_handle);
 
-    if (msg_num > 4u)
+    if (msg_num > 8u)
     {
-        catch_parsing_error(parse_handle, ERR_PARSE_MSG_SIZE_0_4, NULL);
+        catch_parsing_error(parse_handle, ERR_PARSE_MSG_SIZE_0_8, NULL);
     }
 
-    unsigned fmt_ids = 1U << msg_num;
+    unsigned fmt_ids = 1U << (msg_num > 4U ? 4U : msg_num);
     parse_handle->p_new_message->msg_len = 4u * msg_num;
     return assign_fmt_id(fmt_ids, parse_handle->p_new_message);
 }
@@ -235,7 +235,7 @@ void parse_msg_directives(parse_handle_t *parse_handle)
     }
     else if (strncmp(fmt_text, "MSG", 3) == 0)
     {
-        parse_msg_directive(parse_handle, 3, TYPE_MSG0_4, parse_msg_num);
+        parse_msg_directive(parse_handle, 3, TYPE_MSG0_8, parse_msg_num);
     }
     else if (strncmp(fmt_text, "EXT_MSG", 7) == 0)
     {

@@ -19,6 +19,7 @@
 #include "format.h"
 
 void print_message(void);
+void print_current_message_name(FILE* out, value_format_t* fmt);
 
 #endif // _PRINT_MESSAGE_H
 

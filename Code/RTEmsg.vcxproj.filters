@@ -87,6 +87,9 @@
     <ClInclude Include="timestamp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="vcd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.c">
@@ -147,6 +150,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="messages.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vcd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

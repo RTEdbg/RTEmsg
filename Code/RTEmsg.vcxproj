@@ -411,6 +411,7 @@
     <ClInclude Include="text.h" />
     <ClInclude Include="timestamp.h" />
     <ClInclude Include="utf8_helpers.h" />
+    <ClInclude Include="vcd.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cmd_line.c" />
@@ -442,6 +443,7 @@
     <ClCompile Include="statistics.c" />
     <ClCompile Include="process_bin_data.c" />
     <ClCompile Include="utf8_helpers.c" />
+    <ClCompile Include="vcd.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

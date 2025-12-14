@@ -123,17 +123,29 @@ static void check_fmt_type_data(parse_handle_t *parse_handle, char fmt_char)
     }
 
     // Skip address & size check if the data type has a zero size (e.g., for "%t")
-    if (current_format->data_size == 0)
+    if ((current_format->data_size == 0) && 
+        ! ((current_format->fmt_type == PRINT_STRING)
+            && (parse_handle->p_current_message->msg_type == TYPE_MSG0_8))  // Known message length
+        )
     {
         return;
     }
 
     // Validate if the value fits into the message (based on the defined message size)
-    unsigned last_bit_address = current_format->bit_address + current_format->data_size;
+    unsigned bit_size = current_format->data_size;
+
+    if ((bit_size == 0) && (current_format->fmt_type == PRINT_STRING) &&
+        (parse_handle->p_current_message->msg_type == TYPE_MSG0_8))
+    {
+        bit_size = 8;       // Minimal string length (the minimum number of bits that must be in a message)
+    }
+
+    unsigned last_bit_address = current_format->bit_address + bit_size;
+
     if (((last_bit_address > (parse_handle->p_current_message->msg_len * 8u))
             && (parse_handle->p_current_message->msg_len != 0))
         || ((parse_handle->p_current_message->msg_len == 0)
-            && (parse_handle->p_current_message->msg_type == TYPE_MSG0_4)))
+            && (parse_handle->p_current_message->msg_type == TYPE_MSG0_8)))
     {
         catch_parsing_error(parse_handle, ERR_PARSE_TYPE_MSG_SIZE, NULL);
     }
@@ -1066,6 +1078,11 @@ static void finalize_substring(char *fmt_substring, size_t index, char **p, pars
     fill_in_fmt_type(format_string, parse_handle, fmt_char);
     parse_handle->current_format->fmt_string = format_string;
 
+    if (IS_A_VCD_TYPE(parse_handle->special_fmt))
+    {
+        parse_handle->current_format->special_fmt = parse_handle->special_fmt;
+    }
+
     check_y_type_formatting(parse_handle, fmt_substring);
     parse_bit_address += parse_handle->current_format->data_size; // Update bit address for next value
 
@@ -1090,13 +1107,16 @@ static void finalize_substring(char *fmt_substring, size_t index, char **p, pars
 
 void separate_fmt_strings(char *buffer, parse_handle_t *parse_handle)
 {
-    if (*buffer == '\0')
-    {
-        catch_parsing_error(parse_handle, ERR_PARSE_EMPTY_STRING, "");
-    }
-
     check_stack_space();  // Ensure sufficient stack space for recursion
     prepare_or_continue_fmt(parse_handle);
+
+    if (*buffer == '\0')        // Empty printf string in the format definition?
+    {
+        parse_handle->current_format->fmt_string = "";
+        parse_handle->current_format->data_size = 0;
+        parse_handle->current_format->bit_address = 0;
+        parse_handle->current_format->fmt_type = PRINT_PLAIN_TEXT;
+    }
 
     char fmt_substring[MAX_INPUT_LINE_LENGTH];
     size_t substr_index = 0;
@@ -1121,8 +1141,10 @@ void separate_fmt_strings(char *buffer, parse_handle_t *parse_handle)
                 continue;
             }
 
-            // Validate C style and special (extended) type field characters
-            if (strchr("dicouxXeEfFgGaAtTNWHYBsDM", c) == NULL)
+            // Validate C style and special (extended) type field characters.
+            // Smaller number of format types is available for VCD files.
+            if (strchr(IS_A_VCD_TYPE(parse_handle->current_format->special_fmt) ?
+                "diueEfFgGYs" : "dicouxXeEfFgGaAtTNWHYBsDM", c) == NULL)
             {
                 // Invalid type character or incomplete format
                 catch_parsing_error(parse_handle, ERR_PARSE_TYPE_UNRECOGNIZED, buffer);
@@ -1173,6 +1195,11 @@ void separate_fmt_strings(char *buffer, parse_handle_t *parse_handle)
         parse_handle->current_format->data_size = 0;
         parse_handle->current_format->fmt_type = PRINT_PLAIN_TEXT;
         parse_handle->current_format->bit_address = parse_bit_address;
+        
+        if (IS_A_VCD_TYPE(parse_handle->special_fmt))
+        {
+            parse_handle->current_format->special_fmt = parse_handle->special_fmt;
+        }
     }
 }
 

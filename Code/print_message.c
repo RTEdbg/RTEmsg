@@ -20,6 +20,7 @@
 #include "statistics.h"
 #include "files.h"
 #include "errors.h"
+#include "vcd.h"
 
 
 #if _WIN64 != 1
@@ -197,8 +198,8 @@ static void value_scaling(value_format_t *fmt, double data)
 
         /* Convert the scaled double value to integer and unsigned integer also to 
          * enable printing with %d, %u, etc. */
-        g_msg.value.data_i64 = (int64_t)(g_msg.value.data_double + 0.5);
-        g_msg.value.data_u64 = (uint64_t)(g_msg.value.data_double + 0.5);
+        g_msg.value.data_i64 = (int64_t)round(g_msg.value.data_double);
+        g_msg.value.data_u64 = (uint64_t)round(g_msg.value.data_double);
     }
 }
 
@@ -387,6 +388,10 @@ static bool process_value_auto(value_format_t *fmt)
 
         case PRINT_STRING:
             // The pointer to the start of value.data_u64 is already prepared
+            break;
+
+        case PRINT_SELECTED_TEXT:
+            // The pointer to the selected string is already prepared
             break;
 
         default:
@@ -1040,7 +1045,7 @@ static void print_dTimeStamp_to_file(FILE *out, msg_data_t *p_fmt, value_format_
  * @param fmt   Pointer to the current value parameters.
  */
 
-static void print_current_message_name(FILE *out, value_format_t *fmt)
+void print_current_message_name(FILE *out, value_format_t *fmt)
 {
     fprintf(out, fmt->fmt_string);
     fprintf(out, get_format_id_name(g_msg.fmt_id));
@@ -1120,7 +1125,15 @@ static void print_timestamp_to_file(FILE *out, value_format_t *fmt)
 static void print_selected_text(FILE *out, value_format_t *fmt)
 {
     prepare_value(fmt, 0);
-    fprintf(out, "%s", fmt->fmt_string);
+
+    if (IS_A_VCD_TYPE(fmt->special_fmt))
+    {
+        vcd_add_text_to_string(fmt->fmt_string);
+    }
+    else
+    {
+        fprintf(out, "%s", fmt->fmt_string);
+    }
 
     // Retrieve the text from a list of text messages
     const char *text = get_selected_text(fmt->in_file, (unsigned)(g_msg.value.data_u64));
@@ -1128,6 +1141,12 @@ static void print_selected_text(FILE *out, value_format_t *fmt)
 
     if (text != NULL)
     {
+        if (IS_A_VCD_TYPE(fmt->special_fmt))
+        {
+            vcd_add_text_to_string(text);
+            return;
+        }
+
         fprintf(out, "%s", text);
     }
 
@@ -1152,13 +1171,51 @@ static void print_selected_text(FILE *out, value_format_t *fmt)
 
 static void print_message_as_string_to_file(FILE *out, value_format_t *fmt)
 {
+    bool print_from_memo = false;
+
+    if ((fmt->get_memo >= NUMBER_OF_FILTER_BITS) && (fmt->get_memo <= MAX_ENUMS))
+    {
+        if ((g_msg.enums[fmt->get_memo].name != NULL) && (g_msg.enums[fmt->get_memo].type == MEMO_TYPE))
+        {
+            print_from_memo = true;
+            g_msg.value.data_double = g_msg.enums[fmt->get_memo].memo_value;
+            g_msg.value.data_u64 = (uint64_t)g_msg.value.data_double;
+        }
+    }
+
     if (fmt->data_size == 0)    // Print the entire message?
     {
-        fprintf(out, fmt->fmt_string, g_msg.assembled_msg);
+        if (print_from_memo)
+        {
+            if (IS_A_VCD_TYPE(fmt->special_fmt))
+            {
+                vcd_print_string(fmt->fmt_string, (const char*)&g_msg.value.data_u64);
+                return;
+            }
+
+            fprintf(out, fmt->fmt_string, (const char *)&g_msg.value.data_u64);
+        }
+        else
+        {
+            if (IS_A_VCD_TYPE(fmt->special_fmt))
+            {
+                vcd_print_string(fmt->fmt_string, (const char*)g_msg.assembled_msg);
+                return;
+            }
+
+            fprintf(out, fmt->fmt_string, g_msg.assembled_msg);
+        }
     }
     else
     {
         prepare_value(fmt, true);
+
+        if (IS_A_VCD_TYPE(fmt->special_fmt))
+        {
+            vcd_print_string(fmt->fmt_string, (const char*)&g_msg.value.data_u64);
+            return;
+        }
+
         fprintf(out, fmt->fmt_string, (const char *)&g_msg.value.data_u64);
     }
 
@@ -1166,7 +1223,14 @@ static void print_message_as_string_to_file(FILE *out, value_format_t *fmt)
     {
         if (fmt->data_size == 0)    // Print the entire message?
         {
-            fprintf(g_msg.file.main_log, fmt->fmt_string, g_msg.assembled_msg);
+            if (print_from_memo)
+            {
+                fprintf(g_msg.file.main_log, fmt->fmt_string, (char*)&g_msg.value.data_u64);
+            }
+            else
+            {
+                fprintf(g_msg.file.main_log, fmt->fmt_string, g_msg.assembled_msg);
+            }
         }
         else
         {
@@ -1384,6 +1448,13 @@ static void check_extended_data(enum msg_type_t msg_type)
 static void print_uint(FILE *out, value_format_t *fmt)
 {
     prepare_value(fmt, false);
+
+    if (IS_A_VCD_TYPE(fmt->special_fmt))
+    {
+        vcd_print_uint(fmt->fmt_string, g_msg.value.data_u64);
+        return;
+    }
+
     fprintf(out, fmt->fmt_string, g_msg.value.data_u64);
 
     if (fmt->print_copy_to_main_log)
@@ -1403,6 +1474,13 @@ static void print_uint(FILE *out, value_format_t *fmt)
 static void print_int(FILE *out, value_format_t *fmt)
 {
     prepare_value(fmt, false);
+
+    if (IS_A_VCD_TYPE(fmt->special_fmt))
+    {
+        vcd_print_int(fmt->fmt_string, g_msg.value.data_i64);
+        return;
+    }
+
     fprintf(out, fmt->fmt_string, g_msg.value.data_i64);
 
     if (fmt->print_copy_to_main_log)
@@ -1422,6 +1500,13 @@ static void print_int(FILE *out, value_format_t *fmt)
 static void print_double(FILE *out, value_format_t *fmt)
 {
     prepare_value(fmt, false);
+
+    if (IS_A_VCD_TYPE(fmt->special_fmt))
+    {
+        vcd_print_double(fmt->fmt_string, g_msg.value.data_double);
+        return;
+    }
+
     fprintf(out, fmt->fmt_string, g_msg.value.data_double);
 
     if (fmt->print_copy_to_main_log)
@@ -1440,6 +1525,12 @@ static void print_double(FILE *out, value_format_t *fmt)
 
 static void print_plain_text(FILE *out, value_format_t *fmt)
 {
+    if (IS_A_VCD_TYPE(fmt->special_fmt))
+    {
+        vcd_add_text_to_string(fmt->fmt_string);
+        return;
+    }
+
     fprintf(out, fmt->fmt_string);
 
     if (fmt->print_copy_to_main_log)
@@ -1547,7 +1638,10 @@ void print_message(void)
     check_extended_data(p_fmt->msg_type);
 
     // Print the message information for the Main.log file (mandatory data)
-    fprintf(g_msg.file.main_log, "\n");
+    if (g_msg.print_nl_to_main_log || g_msg.param.debug)
+    {
+        fprintf(g_msg.file.main_log, "\n");
+    }
 
     // Flag the message number with a '#' symbol if the timestamp is flagged as suspicious
     if (g_msg.timestamp.mark_problematic_tstamps)
@@ -1565,6 +1659,8 @@ void print_message(void)
     timestamp_logging();
     g_msg.messages_processed_after_restart++;
     value_format_t *fmt = p_fmt->format;
+    g_msg.print_nl_to_main_log = p_fmt->add_nl_to_main_log;
+    bool special_fmt_detected = false;
 
     while (fmt != NULL)
     {
@@ -1577,7 +1673,27 @@ void print_message(void)
             g_msg.error_value_no++;
         }
 
+        if (IS_A_VCD_TYPE(fmt->special_fmt))
+        {
+            if (!special_fmt_detected)
+            {
+                vcd_reset_structure();
+                special_fmt_detected = true;
+            }
+        }
+        else
+        {
+            special_fmt_detected = false;
+        }
+
         print_single_value(out, p_fmt, fmt);
+
+        if (fmt->special_fmt == VCD_FINALIZE)
+        {
+            vcd_finalize_variable(fmt->out_file);
+            special_fmt_detected = false;
+        }
+
         process_statistics_for_the_current_value(p_fmt, fmt);
         fmt = fmt->format;      // Continue processing the next formatting definition
     }

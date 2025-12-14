@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <direct.h>
+#include <time.h>
+#include <windows.h>
 #include "main.h"
 #include "errors.h"
 #include "files.h"
@@ -194,10 +196,10 @@ void create_main_log_file(void)
 void remove_file(const char *file_name)
 {
     _set_errno(0);
-    int result = utf8_remove(file_name);
+        int result = utf8_remove(file_name);
 
     if (result == -1)
-    {
+        {
         if (errno != ENOENT)    // ENOENT indicates the file does not exist, which is acceptable
         {
             report_problem_with_string(ERR_COULD_NOT_DELETE_FILE, file_name);

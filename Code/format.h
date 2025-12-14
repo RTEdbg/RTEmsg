@@ -46,7 +46,7 @@ enum fmt_type_t
     PRINT_UINT64,               // "%u", "%c", "%x", "%o", "%X", "%lu", "%lx", "%lX", "%lo" etc.
     PRINT_INT64,                // "%d", "%i", "%ld", "%li" etc.
     PRINT_DOUBLE,               // "%f", "%F", "%e", "%E", "%g", "%G", "%a", "%A"
-    PRINT_BINARY,               // "%b", "%B"
+    PRINT_BINARY,               // "%B"
     PRINT_TIMESTAMP,            // "%t"
     PRINT_dTIMESTAMP,           // "%T"
     PRINT_MSG_NO,               // "%N"
@@ -56,6 +56,8 @@ enum fmt_type_t
     PRINT_BIN_TO_FILE,          // "%W"
     PRINT_DATE,                 // "%D"
     PRINT_MSG_FMT_ID_NAME       // "%M"
+    // Not assigned:  *C, I, J, K, O, P, Q, R, *S, U, V, *Z, b, j, k, m, *n, *p, q, r, v, w, y, z
+    //  '*' - see special types: https://learn.microsoft.com/en-us/cpp/c-runtime-library/format-specification-syntax-printf-and-wprintf-functions?view=msvc-170
 };
 
 
@@ -95,6 +97,7 @@ typedef struct value_format
     enum data_type_t data_type;     /*!< Type of data formatting (signed, unsigned, float, ...) */
     enum fmt_type_t fmt_type;       /*!< Which data type should be used for the fprintf() */
     bool print_copy_to_main_log;    /*!< != 0 => Print copy of data printed to defined file to Main.log file. */
+    special_fmt_t special_fmt;      /*!< != 0 => Special formating requirement. */
     double mult;                    /*!< Multiplier for data scaling (0 = no scaling) */
     double offset;                  /*!< Offset added before the multiplication */
     value_stats_t *value_stat;      /*!< Value statistics (NULL = no statistics for this value) */
@@ -105,7 +108,7 @@ typedef struct value_format
 /*@brief Define type of message for which the decoding function must expect. */
 enum msg_type_t
 {
-    TYPE_MSG0_4,                    /*!< For MSG0 .. MSGnn - known length at compile time */
+    TYPE_MSG0_8,                    /*!< For MSG0 .. MSGnn - known length at compile time */
     TYPE_MSGN,                      /*!< For MSGN - known and unknown length (0 = unknown) */
     TYPE_EXT_MSG,                   /*!< For EXT_MSG0..4 - known length */
     TYPE_MSGX                       /*!< For MSGX - unknown length */
@@ -118,6 +121,7 @@ typedef struct
 {
     const char *message_name;       /*!< Name of this message type - i.e. MSG2_NAME */
     enum msg_type_t msg_type;       /*!< Type of message (most message types have known length) */
+    bool add_nl_to_main_log;        /*!< true - add newline before next message in Main.log */
     uint16_t ext_data_mask;         /*!< AND mask used to select the extended info from the format_id */
     uint32_t msg_len;               /*!< Expected message length in bytes (0 - unknown at compile time) */
     uint32_t counter;               /*!< Number of same message type received and successfully processed after

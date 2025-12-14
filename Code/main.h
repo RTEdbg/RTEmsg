@@ -22,9 +22,6 @@
 #include "messages.h"
 
 
-#define MAX_FMT_IDS  (1ul << MAX_FMT_ID_BITS)
-
-
 /* @brief Values returned by the functions assemble_message() and data_in_the_buffer() */
 typedef enum assemble_msg_code_t
 {
@@ -53,6 +50,7 @@ typedef struct _param_t
     bool purge_defines;                 //!< Eliminate all #define directives from the format files during parsing
     bool additional_newline;            //!< Print additional newline after information for every message to Main.log
     bool codepage_utf8;                 //!< Use the CP_UTF8 while printing the parsing error messages to the console
+    bool do_not_generate_gtkw_file;     //!< Do not generate the .gtkw file during generation of a .vcd file.
     char time_unit;                     //!< Specify time unit for the timestamps
     double time_multiplier;             //!< Time multiplier - used for printing of timestamps
     char number_of_format_id_bits;      //!< Number of bits used for the format ID
@@ -113,6 +111,67 @@ typedef struct _header_data_t
 } rte_header_data_t;
 
 
+/**
+ * @brief Enumeration of VCD variable data types.
+ */
+typedef enum _vcd_type
+{
+    VCD_TYPE_NONE = 0,
+    VCD_TYPE_BIT,           // Single bit data type
+    VCD_TYPE_FLOAT,         // Floating point and integer data type (signed/unsigned up to 64 bits)
+    VCD_TYPE_STRING,        // String data type
+    VCD_TYPE_ANALOG,        // Analog data type
+    VCD_TYPE_LAST
+} vcd_type_t;
+
+
+/**
+ * @brief Special formatting options (VCD support implemented so far).
+ */
+typedef enum
+{
+    VCD_NONE = 0,               // No special handling
+    VCD_WORK,                   // Processing of VCD $var value
+    VCD_FINALIZE                // Finalize the VCD $var value and write it to output file
+                                // VCD_FINALIZE may be the only one for simple format definitions
+} special_fmt_t;
+
+#define IS_A_VCD_TYPE(type) ((type >= VCD_WORK) && (type <= VCD_FINALIZE))
+
+
+/**
+ * @brief Structure with name, data type and id string for a $var VCD variable.
+ */
+typedef struct
+{
+    char name[VCD_MAX_VAR_NAME_LENGTH]; // $var name - truncated if too long
+    char id[VCD_MAX_ID_LENGTH];         // $var identifier
+    vcd_type_t variable_type;           // $var type (defines var size also)
+} vcd_var_data_t;
+
+/**
+ * @brief Structure with data for a single VCD output file.
+ */
+typedef struct
+{
+    bool writing_disabled;              // True if writing is disabled due to timestamp errors
+    bool discard_excessive_variables;   // True if too many variables defined for a single VCD file
+    bool data_written;                  // True if at least one $var value has been written to the file
+    bool timestamp_error_found;         // True if a timestamp error has been detected for the current message
+    char last_timestamp_error_value;    // To avoid multiple reporting of same value (unnecessarily VCD file size increase)
+    unsigned consecutive_timestamp_errors; // Number of consecutive timestamp errors found
+
+    uint64_t last_timestamp_ns;         // Last timestamp printed
+    unsigned msg_no_of_last_timestamp;
+                // To check if the timestamp has been already printed for the current message
+    unsigned no_variables;              // Number of variables found during message processing for a single VCD file
+    vcd_var_data_t* p_vcd[VCD_MAX_VARIABLES_PER_FILE];
+    char previous_bit_value[VCD_MAX_VARIABLES_PER_FILE]; // Used for T-toggle and R-reset
+    char pulse_variable_id[VCD_MAX_ID_LENGTH]; // ID of the variable used for pulse generation
+                                               // Non-zero value indicates that a pulse is to be generated.
+} vcd_file_data_t;
+
+
 enum enums_type_t
 {
     FILTER_TYPE,                    // FILTER() data
@@ -129,6 +188,8 @@ typedef struct _enum_data_t
 {
     char *name;                      /*!< Name of the enumerated value: filter, memo, in_file, out_file */
     enum enums_type_t type;          /*!< Type of data in the union */
+    vcd_file_data_t* vcd_data;       /*!< Pointer to structure with VCD specific data (NULL = not a vcd FILE) */
+    char* file_name;                 /*!< Name of the file defined with OUT_FILE() or IN_FILE() */
     union def_union
     {
         char *filter_description;    /*!< FILTER:   pointer to filter description (NULL if not specified) */
@@ -140,7 +201,6 @@ typedef struct _enum_data_t
                                         how the data is formatted - how it has to be prepared */
         double memo_value;           /*!< MEMO:     memorizing of temporary values */
     };
-    char *file_name;                 /*!< Name of the file defined with OUT_FILE() or IN_FILE() */
 } enum_data_t;
 
 
@@ -188,6 +248,9 @@ typedef struct _timestamp_t
     bool mark_problematic_tstamps;  /*!< Add asterisk before the message number */
     bool no_previous_tstamp;        /*!< The timestamp.old value is not valid */
     bool long_timestamp_found;      /*!< At least one long timestamp found */
+    bool first_timestamp_processed; /*!< First timestamp processed */
+    uint64_t first_timestamp_ns;    /*!< First timestamp found in the binary data file in ns */
+    uint64_t last_timestamp_ns;     /*!< Last timestamp found in the binary data file in ns */
 } timestamp_t;
 
 
@@ -211,6 +274,8 @@ typedef struct _rte_msg_t
     char date_string[BIN_FILE_DATE_LENGTH]; /*!< String with date and time of binary data file creation - for "%D" */
     uint32_t messages_processed_after_restart; /*!< Counter of messages processed after reset/restart */
     value_t value;                      /*!< Currently processed/printed numerical value */
+    bool vcd_files_processed;           /*!< true - VCD file definitions found. VCD file have to be processed. */
+    bool print_nl_to_main_log;          /*!< true - print additional newline before next message */
 
     /* Binary data file processing variables */
     uint32_t index;                     /*!< Index to the rte_buffer */
@@ -266,6 +331,8 @@ extern rte_msg_t g_msg;                 /*!< Main global data structure for the 
 void *allocate_memory(size_t size, const char *memory_name);
 char *duplicate_string(const char *string_to_duplicate);
 bool   is_power_of_two(size_t n);
+void print_data_file_name_and_date(FILE* out);
+void print_rtemsg_version(FILE* out);
 
 #endif   // _MAIN_H
 

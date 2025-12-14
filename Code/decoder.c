@@ -312,6 +312,7 @@ void process_message(uint32_t last_index)
 
     if (current_fmt_id >= MAX_FMT_IDS)
     {
+        g_msg.print_nl_to_main_log = true;
         report_no_definition_for_current_message(current_fmt_id, last_index);
         return;
     }
@@ -326,6 +327,7 @@ void process_message(uint32_t last_index)
 
     if (p_fmt == NULL)
     {
+        g_msg.print_nl_to_main_log = true;
         report_no_definition_for_current_message(current_fmt_id, last_index);
         return;
     }
@@ -342,6 +344,7 @@ void process_message(uint32_t last_index)
             g_msg.asm_words++;      // Also print the extended data.
         }
 
+        g_msg.print_nl_to_main_log = true;
         hex_dump_current_message(true);
         return;
     }

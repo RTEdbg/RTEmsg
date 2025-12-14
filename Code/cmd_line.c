@@ -285,6 +285,10 @@ static void process_one_cmd_line_parameter(char *argv)
     {
         g_msg.param.purge_defines = true;
     }
+    else if (strcmp(argv, "-no_gtkw") == 0)
+    {
+        g_msg.param.do_not_generate_gtkw_file = true;
+    }
     else if (strncmp(argv, "-T=", 3) == 0)
     {
         g_msg.param.timestamp_print = (char *)allocate_memory(strlen(argv) - 2, "tstamp");

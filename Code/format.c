@@ -328,6 +328,8 @@ static void print_single_value_formatting_data(FILE *out, value_format_t *p_val_
     }
 
     fprintf(out, "%s\t%s\t", timer_name, value_statistic_name);
+    print_indexed_text(out, p_val_fmt->special_fmt,
+        " ,VCD_WORK,VCD_FINALIZE");
     fprintf(out, "\n");
 }
 
@@ -354,9 +356,9 @@ void print_format_decoding_information(void)
     }
 
     fprintf(out,
-        "FMT\tName\tType\tLength\t"
+        "FMT\tName\tType\tLength\tAdd_nl\t"
         "String\tOutput\tData type\tFmt_type\tAddr\tSize\t"
-        "Get.memo\tPut.memo\tIn.file/memo\tOffset\tMult\tTimer\tStatistics\t\n"
+        "Get.memo\tPut.memo\tIn.file/memo\tOffset\tMult\tTimer\tStatistics\tSpecial type\t\n"
     );
 
     msg_data_t *p_fmt = NULL;
@@ -377,6 +379,15 @@ void print_format_decoding_information(void)
         print_indexed_text(out, p_fmt->msg_type, "MSG0_NN,MSGN,EXT_MSG,MSGX");
         fprintf(out, "%u\t", p_fmt->msg_len);
 
+        if (p_fmt->add_nl_to_main_log)
+        {
+            fprintf(out, "yes\t");
+        }
+        else
+        {
+            fprintf(out, "no\t");
+        }
+
         size_t fmt_counter = 0;
         value_format_t *p_val_fmt = p_fmt->format;
 
@@ -384,7 +395,7 @@ void print_format_decoding_information(void)
         {
             if (fmt_counter > 0)
             {
-                fprintf(out, "\t\t\t\t");
+                fprintf(out, "\t\t\t\t\t");
             }
 
             fmt_counter++;

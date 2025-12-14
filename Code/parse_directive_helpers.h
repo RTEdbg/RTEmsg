@@ -59,6 +59,8 @@ struct parse_handle_str
     rte_enum_t prev_out_file_idx;       /*!< Output file index for the previously processed message */
     rte_enum_t current_out_file_idx;    /*!< Index of the current >OUT_FILE */
     bool print_to_main_log;             /*!< true if the value should also be printed to the Main.log file */
+    special_fmt_t special_fmt;          /*!< Special formatting requirements such as VCD file processing. */
+    bool special_fmt_detected;          /*!< false - special_fmt was VCD_NONE before, true - special_fmt > VCD_NONE */
 };
 
 typedef struct parse_handle_str parse_handle_t;
@@ -94,6 +96,7 @@ void parse_name(parse_handle_t *parse_handle, char *name);
 bool parse_until_specified_character(char **position, char *result, size_t resultSize, char stop_char);
 bool parse_quoted_arg(char **position, char *buffer, size_t resultSize);
 void parse_file_path_arg(parse_handle_t *parse_handle, char *filePathBuff, size_t max_length);
+void set_tags_for_add_newline_to_main_log(void);
 
 #endif // PARSE_DIRECTIVE_HELPERS_H
 

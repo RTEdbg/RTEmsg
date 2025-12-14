@@ -93,7 +93,7 @@ static void create_headguard_string(const char *in_buff, char *out_buff, size_t 
 
 /**
  * @brief Attempts to open a file and checks for errors. If the error is EACCES (permission denied),
- *        the function will retry opening the file until the timeout defined by MAX_FILE_OPEN_TIME [ms].
+ *        the function will retry opening the file until the timeout defined by MAX_FILE_EACCES_TIME [ms].
  *
  * @param filename    The path of the file to be opened.
  * @param file        A pointer to store the file pointer of the opened file.
@@ -122,7 +122,7 @@ static bool open_file(const char *filename, FILE **file)
 
         Sleep(10);      // Wait before retrying
     }
-    while ((clock() - start_time) <= MAX_FILE_OPEN_TIME);
+    while ((clock() - start_time) <= MAX_FILE_EACCES_TIME);
 
     return false;
 }

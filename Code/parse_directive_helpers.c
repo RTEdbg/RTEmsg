@@ -310,4 +310,75 @@ void parse_file_path_arg(parse_handle_t *parse_handle, char *file_path, size_t m
     }
 }
 
+
+/**
+ * @brief Checks if the format string ends with a newline character.
+ *
+ * @param val_fmt   Pointer to the value_format_t structure containing the format string.
+ *
+ * @return  true    If the format string ends with a newline character.
+ *          false   Otherwise.
+ */
+
+static bool nl_at_end_of_fmt_string(const value_format_t* val_fmt)
+{
+    size_t len = strlen(val_fmt->fmt_string);
+
+    if (len == 0)
+    {
+        return false; // Empty string
+    }
+
+    // Check if the last character is a newline
+    return (val_fmt->fmt_string[len - 1] == '\n');
+}
+
+
+/**
+ * @brief Determines whether to add a newline after the message in Main.log.
+ *        This is done for all messages.
+ *        The function is called after processing all formatting definitions.
+ */
+
+void set_tags_for_add_newline_to_main_log(void)
+{
+    msg_data_t* p_fmt = NULL;
+
+    for (unsigned i = 0; i < g_msg.fmt_ids_defined; i++)
+    {
+        if ((p_fmt == g_fmt[i])       // Data has been checked already since the next pointer points
+            || (g_fmt[i] == NULL))    // to the same structure or was not defined for this format ID
+        {
+            continue;                 // Skip empty or already processed formatting definitions
+        }
+
+        p_fmt = g_fmt[i];
+        value_format_t* p_val_fmt = p_fmt->format;
+        bool add_nl = true;
+
+        while (p_val_fmt != NULL)
+        {
+            if (((*p_val_fmt->fmt_string == '\0') && (p_val_fmt->fmt_type == PRINT_PLAIN_TEXT))
+                || ((p_val_fmt->out_file != 0) && (!p_val_fmt->print_copy_to_main_log)))
+            {
+                p_val_fmt = p_val_fmt->format;
+                continue; // Skip empty strings, values not copied to Main.log or printed to other files
+            }
+
+            add_nl = true;
+
+            if ((nl_at_end_of_fmt_string(p_val_fmt))
+                && ((strchr(p_val_fmt->fmt_string, '%') != NULL)
+                   || (p_val_fmt->fmt_type == PRINT_PLAIN_TEXT)))
+            {
+                add_nl = false; // Newline already present at the end of the format string
+            }
+
+            p_val_fmt = p_val_fmt->format;
+        }
+
+        p_fmt->add_nl_to_main_log = add_nl;
+    }
+}
+
 /*==== End of file ====*/

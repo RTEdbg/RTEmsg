@@ -74,7 +74,7 @@ static inline bool fmt_id_valid(uint32_t *p_fmt_id, uint32_t data_words)
             }
             break;
 
-        case TYPE_MSG0_4:                       // Messages with a known length
+        case TYPE_MSG0_8:                       // Messages with a known length
             if (length == data_words)
             {
                 return true;
@@ -269,7 +269,7 @@ static inline void process_timestamp_value(uint64_t *p_new_timestamp)
     bool search_next_long_tstamp = false;
     bool update_old_tstamp_value = true;
 
-    if ((time_diff >= 0) && (time_diff <= g_msg.param.max_positive_tstamp_diff))
+     if ((time_diff >= 0) && (time_diff <= g_msg.param.max_positive_tstamp_diff))
     {
         /* New timestamp is slightly larger than the old one, no overflow occurred
          * No need to update the high part of the timestamp */

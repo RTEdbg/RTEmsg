@@ -23,6 +23,7 @@
 #include "print_message.h"
 #include "print_helper.h"
 #include "read_bin_data.h"
+#include "vcd.h"
 
 
 /**
@@ -116,7 +117,7 @@ static uint32_t get_packet_length(uint32_t fmt_id)
 
     switch (g_fmt[fmt_id]->msg_type)
     {
-        case TYPE_MSG0_4:
+        case TYPE_MSG0_8:
             break;
 
         case TYPE_EXT_MSG:
@@ -701,6 +702,8 @@ void process_bin_data_worker(void)
             case DATA_FOUND:
                 // Decode and print the message content
                 process_message(last_index);
+                vcd_message_post_processing();  // Add "N" - message number to VCD files (if needed)
+                vcd_write_pulse_var_data();     // Write VCD pulse data (if any)
                 break;
 
             case BAD_BLOCK:

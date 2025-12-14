@@ -200,6 +200,8 @@ void print_decoding_errors(void)
         {
             print_decoding_errors_to_file(g_msg.file.error_log);
         }
+
+        g_msg.print_nl_to_main_log = true;
     }
 }
 

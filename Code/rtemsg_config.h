@@ -14,8 +14,8 @@
 #define _RTEMSG_CONFIG_H
 
 #define RTEMSG_VERSION            1
-#define RTEMSG_SUBVERSION         1
-#define RTEMSG_REVISION           1
+#define RTEMSG_SUBVERSION         2
+#define RTEMSG_REVISION           0
 
 #define RTEMSG_DEBUG_MODE         0       // Print messages together with their indexes to Errors.log
 
@@ -33,11 +33,14 @@
 #define TOP_MESSAGES                 10   // Number of top messages for which the statistics will be printed
 #define MAX_FMT_ID_BITS             16u   // Max. number of index bits (2^N = max. number of different message types)
                                           // 16 = max. value to reserve 32 - 16 - 1 = minimally 15 bits for timestamps
+#define MAX_FMT_IDS  (1ul << MAX_FMT_ID_BITS)
+
 #define NUMBER_OF_FILTER_BITS       32u   // This value is fixed (should not be modified)
 #define MAX_ERRORS_IN_SINGLE_MESSAGE 10   // Maximal number of errors shown during single message decoding
-#define MAX_FILE_OPEN_TIME         1500   // Max. time [ms] to wait if the fopen fails due to EACCES error
+#define MAX_FILE_EACCES_TIME       1500   // Max. time [ms] to wait if the fopen() or remove() fails due to EACCES error
 
 #define MAX_TXT_MESSAGE_LENGTH      500   // Max. line length for text in Messages.txt file
+                                          // Note: change the ERR_TOO_MANY_VARIABLES_PER_VCD_FILE also!
 #define MAX_INPUT_LINE_LENGTH      2004   // Max. line length for the format definition files (2000 effective length)
 #define MAX_FILE_MODE_LENGTH          5   // Maximal size of the OUT_FILE() file mode argument
 #define MAX_SHORTENED_STRING         80   // Max. reported string length during data decoding error reporting
@@ -54,8 +57,9 @@
 
 // Thresholds for the -ts command line argument check.
 // After changing these values, the text FATAL_BAD_TS_PARAMETER_VALUE has to be changed also.
+// Values are relative to the timestamp period
 #define MAX_NEGATIVE_TSTAMP_DIFF    0.33
-#define MAX_POSITIVE_TSTAMP_DIFF    0.33
+#define MAX_POSITIVE_TSTAMP_DIFF    0.49
 #define MIN_TIMESTAMP_DIFF          0.01
 #define NORMALIZED_TSTAMP_PERIOD        (int64_t)(0x100000000ull)
 #define DEFAULT_POSITIVE_TIMESTAMP_DIFF (int64_t)( MAX_POSITIVE_TSTAMP_DIFF * (double)NORMALIZED_TSTAMP_PERIOD)
@@ -74,6 +78,14 @@
 #else
 #error "Value out of range"
 #endif
+
+// VCD file definitions
+#define VCD_MAX_VAR_NAME_LENGTH       56                    // Max. length of a $var variable name (including '\0')
+#define VCD_MAX_ID_LENGTH              4                    // $var variable ID length (including '\0')
+#define VCD_STRING_VALUE_MAX_LEN      64                    // Max. length of string variable value
+#define VCD_MAX_ASSEMBLED_STRING_LEN  200                   // Max. length of "x Name=value" during decoding
+#define VCD_MAX_VARIABLES_PER_FILE    500                   // Max. number of $var variable definitions in a single VCD file
+#define VCD_MAX_CONSECUTIVE_TIMESTAMP_ERRORS 10             // Max. number of consecutive timestamp errors before disabling writing to VCD file
 
 // The default input files
 #define RTE_MESSAGES_FILE          "Messages.txt"           // Error and other messages and printf strings
